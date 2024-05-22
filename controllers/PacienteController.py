@@ -41,3 +41,11 @@ def Alterar(paciente):
 		SET nome = ?, fao = ?, idade = ?, data_nascimento = ?, sexo = ?, filiacao = ?, endereco = ?, telefone = ?, tipo_fissura = ?, historia_tratamento = ? 
 		WHERE id = ?""", (paciente.nome, paciente.fao, paciente.idade, paciente.data, paciente.sexo, paciente.filiacao, paciente.endereco, paciente.telefone, paciente.tipo_fissura, paciente.historia_tratamento, paciente.id))
 	db.con.commit()
+
+def Diagnostico_docs(paciente):
+	
+	db.cursor.execute("""
+		UPDATE Paciente
+		SET carac_oclusais = ?, neces_odonto = ?, neces_orto = ?, neces_cirur = ?, outros = ?, diagnostico = ?, plano_tratamento = ? 
+		WHERE id = ?""", (paciente.carac_oclusais, paciente.neces_odonto, paciente.neces_orto, paciente.neces_cirur, paciente.outros, paciente.diagnostico, paciente.plano_tratamento, paciente.id))
+	db.con.commit()

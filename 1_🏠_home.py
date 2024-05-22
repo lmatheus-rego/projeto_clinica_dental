@@ -27,7 +27,7 @@ st.set_page_config(
     page_icon="🏠",
 )
 st.sidebar.title("Menu")
-st.title("Home")
+st.title("Projeto Céu da Boca")
 delete_page("1_🏠_home", "ficha_clinica")
 delete_page("1_🏠_home", "alterar_paciente")
 delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")

@@ -25,7 +25,7 @@ with st.form(key="diagnostico_paciente"):
         input_plano = st.text_area(label="**Plano de Tratamento:**", value= Ficha[0].plano_tratamento)
     with col2:
         input_orto = st.text_area(label="**Necessidades Ortodônticas:**", value= Ficha[0].neces_orto)
-        input_orto = st.text_area(label="**Necessidades Cirúrgicas:**", value= Ficha[0].neces_cirur)
+        input_cirur = st.text_area(label="**Necessidades Cirúrgicas:**", value= Ficha[0].neces_cirur)
         input_diagnostico = st.text_area(label="**Diagnostico:**", value= Ficha[0].diagnostico)
         input_docs = st.file_uploader(label="**Inserir Exames:**")   
         
@@ -36,15 +36,12 @@ with st.form(key="diagnostico_paciente"):
 
 if input_button_submit:
     paciente.id = id
-    paciente.nome = input_name
-    paciente.fao = input_fao
-    paciente.idade = input_idade
-    paciente.data = input_data
-    paciente.sexo = input_sexo
-    paciente.filiacao = input_filiacao
-    paciente.endereco = input_endereco
-    paciente.telefone = input_telefone
-    paciente.tipo_fissura = input_tipo_fissura
-    paciente.historia_tratamento = input_historia_tratamento
-    PacienteController.Alterar(paciente)
+    paciente.carac_oclusais = input_oclusais
+    paciente.neces_odonto = input_odonto
+    paciente.neces_orto = input_orto
+    paciente.neces_cirur = input_cirur
+    paciente.diagnostico = input_diagnostico
+    paciente.plano_tratamento = input_plano
+    paciente.outros = input_outros
+    PacienteController.Diagnostico_docs(paciente)
     st.success("Paciente atualizado com sucesso!")

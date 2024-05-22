@@ -1,8 +1,11 @@
 import streamlit as st;
 import controllers.PacienteController as PacienteController
+#from  PyPDF2 import PdfFileReader
+from streamlit_pdf_viewer import pdf_viewer
+import glob
 
 Ficha = PacienteController.Ficha_Clinica()
-st.write(f"Ficha Clinica")
+st.title("Ficha Clínica")
 col1, col2 = st.columns(2)
 with col1:
                 st.write(f"**Nome:** {Ficha[0].nome}")
@@ -39,3 +42,12 @@ with col2:
 st.write(f"______________________________")
 st.write("**Registros Clínicos:**") 
 st.write(f"______________________________")
+st.write("**Documentos Anexados:**") 
+pdffiles = []
+for file in glob.glob(f"files\pacientes\{Ficha[0].id}\*.pdf"):
+        pdffiles.append(file)
+with st.expander("Documentos Anexados", expanded=True):
+        for arquivo in pdffiles:
+                st.write(f"______________________________")
+                st.write(arquivo)
+                pdf_viewer(arquivo)
