@@ -47,8 +47,8 @@ st.write("**Documentos Anexados:**")
 pdffiles = []
 for file in glob.glob(f"files\pacientes\{Ficha[0].id}\*.pdf"):
         pdffiles.append(file)
-with st.expander("Documentos Anexados", expanded=True):
-        for arquivo in pdffiles:
+
+for arquivo in pdffiles:
                 st.write(f"______________________________")
                 st.write(arquivo)
                 #pdf_display = F'<iframe src="{arquivo}" width="800" height="800" type="application/pdf"></iframe>'
