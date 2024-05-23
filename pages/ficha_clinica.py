@@ -1,6 +1,7 @@
 import streamlit as st;
 import controllers.PacienteController as PacienteController
 #from  PyPDF2 import PdfFileReader
+import streamlit.components.v1 as components
 from streamlit_pdf_viewer import pdf_viewer
 import glob
 
@@ -50,4 +51,6 @@ with st.expander("Documentos Anexados", expanded=True):
         for arquivo in pdffiles:
                 st.write(f"______________________________")
                 st.write(arquivo)
+                #pdf_display = F'<iframe src="{arquivo}" width="800" height="800" type="application/pdf"></iframe>'
+                #st.markdown(pdf_display, unsafe_allow_html=True)
                 pdf_viewer(arquivo)
