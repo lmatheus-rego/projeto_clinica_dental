@@ -45,11 +45,10 @@ st.write("**Registros Clínicos:**")
 st.write(f"______________________________")
 st.write("**Documentos Anexados:**") 
 pdffiles = []
-st.write(f"files\pacientes\{Ficha[0].id}\\\*.pdf")
-for file in glob.glob(f"files\pacientes\{Ficha[0].id}\\\*.pdf"):
+for file in glob.glob(f"files\pacientes\{Ficha[0].id}\*.pdf"):
         pdffiles.append(file)
-
-for arquivo in pdffiles:
+with st.expander("Documentos", expanded=True):
+        for arquivo in pdffiles:
                 st.write(f"______________________________")
                 st.write(arquivo)
                 #pdf_display = F'<iframe src="{arquivo}" width="800" height="800" type="application/pdf"></iframe>'
