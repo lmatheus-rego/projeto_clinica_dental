@@ -45,7 +45,7 @@ st.write("**Registros Clínicos:**")
 st.write(f"______________________________")
 st.write("**Documentos Anexados:**") 
 pdffiles = []
-for file in glob.glob(f"files\pacientes\{Ficha[0].id}\*.pdf"):
+for file in glob.glob(f"files/pacientes/{Ficha[0].id}/*.pdf"):
         pdffiles.append(file)
 with st.expander("Documentos", expanded=True):
         for arquivo in pdffiles:
