@@ -48,7 +48,7 @@ if input_button_submit:
     paciente.outros = input_outros
     if input_docs is not None:
         for exame in input_docs:
-            with open(os.path.join(f"files/pacientes/{paciente.id}", exame.name), "wb") as f:
+            with open(os.path.join(f"files/pacientes/{id}", exame.name), "wb") as f:
                     f.write(exame.getbuffer())
     PacienteController.Diagnostico_docs(paciente)
     st.success("Paciente atualizado com sucesso!")
