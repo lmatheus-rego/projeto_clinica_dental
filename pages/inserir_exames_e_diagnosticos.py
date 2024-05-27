@@ -2,7 +2,10 @@ import streamlit as st;
 import controllers.PacienteController as PacienteController
 from datetime import datetime
 import models.Paciente as paciente
+from pathlib import Path
+import os
 
+st.set_page_config(layout="centered")
 st.title("Atualizar Documentos e Diagnóstico")
 id = st.query_params["idpaciente"]
 Ficha = PacienteController.Buscar_Paciente(id)
@@ -27,7 +30,7 @@ with st.form(key="diagnostico_paciente"):
         input_orto = st.text_area(label="**Necessidades Ortodônticas:**", value= Ficha[0].neces_orto)
         input_cirur = st.text_area(label="**Necessidades Cirúrgicas:**", value= Ficha[0].neces_cirur)
         input_diagnostico = st.text_area(label="**Diagnostico:**", value= Ficha[0].diagnostico)
-        input_docs = st.file_uploader(label="**Inserir Exames:**")   
+        input_docs = st.file_uploader(label="**Inserir Exames:**", type=["pdf"], accept_multiple_files=True)   
         
     input_button_submit = st.form_submit_button("Confirmar")
 
@@ -43,5 +46,9 @@ if input_button_submit:
     paciente.diagnostico = input_diagnostico
     paciente.plano_tratamento = input_plano
     paciente.outros = input_outros
+    if input_docs is not None:
+        for exame in input_docs:
+            with open(os.path.join(f"files/pacientes/{paciente.id}", exame.name), "wb") as f:
+                    f.write(exame.getbuffer())
     PacienteController.Diagnostico_docs(paciente)
     st.success("Paciente atualizado com sucesso!")

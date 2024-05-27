@@ -4,7 +4,7 @@ import controllers.PacienteController as PacienteController
 import streamlit.components.v1 as components
 from streamlit_pdf_viewer import pdf_viewer
 import glob
-
+st.set_page_config(layout="centered")
 Ficha = PacienteController.Ficha_Clinica()
 st.title("Ficha Clínica")
 col1, col2 = st.columns(2)
@@ -26,19 +26,19 @@ with col1:
                 st.write("**História do Tratamento:**") 
                 st.write(f"{Ficha[0].historia_tratamento}")
                 st.write("**Necessidades Odontológicas:**") 
-                st.write(f"{Ficha[0].historia_tratamento}")
+                st.write(f"{Ficha[0].neces_odonto}")
                 st.write("**Necessidades Cirúrgicas:**") 
-                st.write(f"{Ficha[0].historia_tratamento}")
+                st.write(f"{Ficha[0].neces_cirur}")
                 
 
 with col2:
 
                 st.write(f"**Características Oclusais:**")
-                st.write(f"{Ficha[0].historia_tratamento}")
+                st.write(f"{Ficha[0].carac_oclusais}")
                 st.write("**Necessidades Ortodônticas:**") 
-                st.write(f"{Ficha[0].historia_tratamento}")
+                st.write(f"{Ficha[0].neces_orto}")
                 st.write("**Outros:**") 
-                st.write(f"{Ficha[0].historia_tratamento}")
+                st.write(f"{Ficha[0].outros}")
 
 st.write(f"______________________________")
 st.write("**Registros Clínicos:**") 
