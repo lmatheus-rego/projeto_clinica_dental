@@ -1,15 +1,14 @@
 import streamlit as st
 import datetime
 import pandas as pd
-import controllers.PacienteController as PacienteController
-import models.Paciente as paciente
-from pathlib import Path
+import gspread
 from streamlit.source_util import (
     page_icon_and_name,
     calc_md5,
     get_pages,
     _on_pages_changed
 )
+from google.oauth2.service_account import Credentials
 
 # Função para deletar páginas do menu lateral
 def delete_page(main_script_path_str, page_name):
@@ -33,15 +32,44 @@ delete_page("1_🏠_home", "ficha_clinica")
 delete_page("1_🏠_home", "alterar_paciente")
 delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
 
-# ====================== DASHBOARD ==========================
-
-# Carregar dados da planilha
-@st.cache_data
+# Função para carregar dados de planilha privada usando gspread
 def carregar_dados():
-    url = "https://docs.google.com/spreadsheets/d/1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs/export?format=csv"
-    df = pd.read_csv(url)
+    # Escopos necessários para acesso à planilha
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
+    # Lê as credenciais do secrets do Streamlit
+    service_account_info = {
+        "type": st.secrets["gcp_service_account"]["type"],
+        "project_id": st.secrets["gcp_service_account"]["project_id"],
+        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
+        "client_email": st.secrets["gcp_service_account"]["client_email"],
+        "client_id": st.secrets["gcp_service_account"]["client_id"],
+        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
+    }
+    
+    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+    gc = gspread.authorize(credentials)
+
+    # Abra a planilha pelo ID
+    SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+    sheet = gc.open_by_key(SPREADSHEET_ID).sheet1  # A primeira aba
+
+    # Pega todos os dados da planilha
+    dados = sheet.get_all_records()
+
+    # Converte para DataFrame
+    df = pd.DataFrame(dados)
+
     return df
 
+# A partir daqui seu código original segue normalmente
 def pacientes_do_mes(df):
     if "Data de Atendimento" not in df.columns:
         return 0
@@ -58,7 +86,7 @@ total_pacientes = len(df)
 atendidos_mes = pacientes_do_mes(df)
 fissuras = df["Tipo de Fissura"].value_counts().to_dict() if "Tipo de Fissura" in df.columns else {}
 
-# Layout com colunas
+# Resto do seu código para UI e gráficos
 st.markdown("## 📊 Resumo Geral")
 col1, col2, col3 = st.columns(3)
 
@@ -78,7 +106,6 @@ with col3:
     else:
         st.markdown("_Nenhuma informação disponível._")
 
-# Gráfico opcional
 with st.expander("📈 Ver gráfico por tipo de fissura"):
     if fissuras:
         import plotly.express as px

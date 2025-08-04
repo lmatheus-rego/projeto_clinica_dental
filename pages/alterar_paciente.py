@@ -3,7 +3,12 @@ import controllers.PacienteController as PacienteController
 from datetime import datetime
 import models.Paciente as paciente
 
-id = st.query_params["idpaciente"]
+id_paciente = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente, list):
+    id_paciente = id_paciente[0]
+id_paciente = id_paciente.strip()
+
+st.write("ID do paciente recebido:", id_paciente)
 Ficha = PacienteController.Buscar_Paciente(id)
 sexo = ["Masculino", "Feminino"]
 st.write(f"Alterar dados do paciente")
@@ -41,3 +46,4 @@ if input_button_submit:
     paciente.historia_tratamento = input_historia_tratamento
     PacienteController.Alterar(paciente)
     st.success("Paciente atualizado com sucesso!")
+    st.experimental_rerun()

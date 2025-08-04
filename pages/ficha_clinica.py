@@ -1,106 +1,157 @@
 import streamlit as st
 import pandas as pd
+from google.oauth2.service_account import Credentials
+import gspread
+from googleapiclient.discovery import build
+from streamlit_pdf_viewer import pdf_viewer
+import urllib.request
 
-# Obter o ID passado via query string
-idpaciente = st.query_params.get("idpaciente", [None])[0]
-
-# Verifica se o parâmetro foi passado corretamente
-if idpaciente is None:
-    st.error("❌ Nenhum paciente foi selecionado.")
-    st.stop()
-
-# Converte o ID para inteiro (se possível)
+# Obter o índice passado via query string (índice da linha)
+id_paciente_str = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente_str, list):
+    id_paciente_str = id_paciente_str[0]
+id_paciente_str = id_paciente_str.strip()
 try:
-    idpaciente = int(idpaciente)
+    id_paciente = int(id_paciente_str)
 except ValueError:
-    st.error("❌ ID de paciente inválido.")
-    st.stop()
+    id_paciente = None  # ou algum valor inválido
 
-# Carrega dados da planilha
-@st.cache_data
+
+# --- Função para carregar dados da planilha ---
 def carregar_dados():
-    url = "https://docs.google.com/spreadsheets/d/1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs/export?format=csv"
-    return pd.read_csv(url)
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    service_account_info = {
+        "type": st.secrets["gcp_service_account"]["type"],
+        "project_id": st.secrets["gcp_service_account"]["project_id"],
+        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
+        "client_email": st.secrets["gcp_service_account"]["client_email"],
+        "client_id": st.secrets["gcp_service_account"]["client_id"],
+        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
+    }
+    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+    gc = gspread.authorize(credentials)
+
+    SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+    sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
+
+    dados = sheet.get_all_records()
+    df = pd.DataFrame(dados)
+    return df
 
 df = carregar_dados()
 df.columns = df.columns.str.strip().str.title()
 
-# Verifica se o índice existe
-if idpaciente >= len(df):
+paciente_df = df[df["Id"].astype(str) == id_paciente_str]
+
+if paciente_df.empty:
     st.error("❌ Paciente não encontrado.")
     st.stop()
 
-# Obtém o paciente
-paciente = df.iloc[idpaciente]
+paciente = paciente_df.iloc[0]  # pega a linha do paciente correspondente
 
-# Exibe os dados
+# Exibe os dados do paciente
 st.title("🗂️ Ficha Clínica do Paciente")
 col1, col2 = st.columns(2)
 
 with col1:
     st.write(f"**Nome:** {paciente.get('Nome', '-')}")
     st.write(f"**Idade:** {paciente.get('Idade', '-')}")
-    st.write(f"**FAO:** {paciente.get('Fao', '-')}")
-    st.write(f"**Endereço:** {paciente.get('Endereço', '-')}")
+    st.write(f"**Fao:** {paciente.get('Fao', '-')}")
+    st.write(f"**Endereço:** {paciente.get('Endereco', '-')}")
 
 with col2:
-    st.write(f"**Data de Nascimento:** {paciente.get('Data De Nascimento', '-')}")
+    st.write(f"**Data De Nascimento:** {paciente.get('Data', '-')}")
     st.write(f"**Sexo:** {paciente.get('Sexo', '-')}")
-    st.write(f"**Filiação:** {paciente.get('Filiação', '-')}")
+    st.write(f"**Filiação:** {paciente.get('Filiacao', '-')}")
     st.write(f"**Telefone:** {paciente.get('Telefone', '-')}")
 
 st.markdown("___")
 
 col1, col2 = st.columns(2)
 with col1:
-    st.write("**História do Tratamento:**")
-    st.write(paciente.get("História Do Tratamento", "-"))
+    st.write("**História Do Tratamento:**")
+    st.write(paciente.get("Historia_Tratamento", "-"))
+    st.write(f"**Necessidades Odontológicas:** {paciente.get('Neces_Odonto', '-')}") 
+    st.write(f"**Necessidades Cirúrgicas:** {paciente.get('Neces_Cirur', '-')}") 
 
 with col2:
-    st.write(f"**Tipo de Fissura:** {paciente.get('Tipo De Fissura', '-')}")
+    st.write(f"**Tipo De Fissura:** {paciente.get('Tipo De Fissura', '-')}")
+    st.write(f"**Características Oclusais:** {paciente.get('Carac_Oclusais', '-')}")
+    st.write(f"**Necessidades Ortodônticas:** {paciente.get('Neces_Orto', '-')}") 
+    st.write(f"**Outros:** {paciente.get('Outros', '-')}") 
 
 st.write("**Registro Clínico:**")
 st.write(paciente.get("Registro Clínico", "-"))
 
-
 # Ações
 if st.button("Voltar"):
-    st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+    st.query_params.clear()
+    st.experimental_rerun()
 
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-
-# Função para listar arquivos PDF do paciente no Google Drive
-def listar_pdfs_paciente(paciente_id: int):
-    # Autentica com service account
+# --- Função para listar arquivos PDF do paciente ---
+def listar_pdfs_paciente(paciente_id_str: str):
     SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-    creds = service_account.Credentials.from_service_account_file(
-        "credentials.json", scopes=SCOPES
-    )
 
+    service_account_info = {
+        "type": st.secrets["gcp_service_account"]["type"],
+        "project_id": st.secrets["gcp_service_account"]["project_id"],
+        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
+        "client_email": st.secrets["gcp_service_account"]["client_email"],
+        "client_id": st.secrets["gcp_service_account"]["client_id"],
+        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
+    }
+
+    creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
     service = build('drive', 'v3', credentials=creds)
 
-    # ID da pasta onde estão os PDFs
-    PASTA_ID = "1cH2C7KrcX69-GfwcPtk_IGIh3WydB-X5"  # <- Substitua se necessário
+    PASTA_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"  # ID da pasta no Google Drive
 
-    # Define o prefixo dos arquivos
-    prefixo = f"P{paciente_id}#"
+    query = f"'{PASTA_ID}' in parents and trashed=false and mimeType='application/pdf'"
 
-    # Consulta os arquivos dentro da pasta com prefixo correspondente
-    query = f"'{PASTA_ID}' in parents and name contains '{prefixo}' and mimeType='application/pdf'"
-    results = service.files().list(
-        q=query,
-        spaces='drive',
-        fields='files(id, name)',
-        orderBy='name'
-    ).execute()
+    arquivos = []
+    page_token = None
 
-    return results.get('files', [])
+    while True:
+        response = service.files().list(
+            q=query,
+            spaces='drive',
+            fields='nextPageToken, files(id, name, webContentLink)',
+            orderBy='name',
+            pageToken=page_token
+        ).execute()
+
+        arquivos.extend(response.get('files', []))
+        page_token = response.get('nextPageToken', None)
+        if page_token is None:
+            break
+
+    tamanho_prefixo = 3 if int(paciente_id_str) < 10 else 4
+    prefixo = f'P{paciente_id_str}#'
+
+    arquivos_filtrados = []
+
+    for arq in arquivos:
+        if arq['name'][:tamanho_prefixo] == prefixo[:tamanho_prefixo]:
+            arquivos_filtrados.append(arq)
+
+
+    return arquivos_filtrados
 
 # Exibir arquivos PDF do paciente
 st.markdown("## 📄 Exames e Documentos")
 
-arquivos = listar_pdfs_paciente(paciente_id=idpaciente)
+arquivos = listar_pdfs_paciente(paciente_id_str=id_paciente_str)
 
 if not arquivos:
     st.info("Nenhum arquivo PDF encontrado para este paciente.")
