@@ -94,34 +94,34 @@ st.markdown("<h2 style='text-align:center;'>📋 Dados E Registros do Paciente</
 espaco, col1, col2, col3, espaco2 = st.columns([1, 2, 2, 2, 1])
 
 with col1:
-    st.markdown(f"<h4 style='text-align:center;'>👤<br>{paciente_info['NOME']}</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>👤<br>{paciente_info['NOME']}</h4>", unsafe_allow_html=True)
 with col2:
-    st.markdown(f"<h4 style='text-align:center;'>🧭<br>FAO: {paciente_info['FAO']}</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>🧭<br>FAO: {paciente_info['FAO']}</h4>", unsafe_allow_html=True)
 with col3:
-    st.markdown(f"<h4 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h4>", unsafe_allow_html=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
-    st.markdown(f"<h5 style='text-align:center;'>🧬 Tipo de Fissura</h5><p style='text-align:center;'>{paciente_info.get('TIPO_FISSURA', '')}</p>", unsafe_allow_html=True)
-    st.markdown(f"<h5 style='text-align:center;'>📋 Plano de Tratamento</h5><p style='text-align:center;'>{paciente_info.get('PLANO_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>🧬 Tipo de Fissura</h5><p style='text-align:center;'>{paciente_info.get('TIPO_FISSURA', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>📋 Plano de Tratamento</h5><p style='text-align:center;'>{paciente_info.get('PLANO_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
 
 with col2:
-    st.markdown(f"<h5 style='text-align:center;'>📝 Diagnóstico</h5><p style='text-align:center;'>{paciente_info.get('DIAGNOSTICO', '')}</p>", unsafe_allow_html=True)
-    st.markdown(f"<h5 style='text-align:center;'>🧩 Características Oclusais</h5><p style='text-align:center;'>{paciente_info.get('CARAC_OCLUSAIS', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>📝 Diagnóstico</h5><p style='text-align:center;'>{paciente_info.get('DIAGNOSTICO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>🧩 Características Oclusais</h5><p style='text-align:center;'>{paciente_info.get('CARAC_OCLUSAIS', '')}</p>", unsafe_allow_html=True)
 
 with col3:
-    st.markdown(f"<h5 style='text-align:center;'>🪥 Necessidades Odontológicas</h5><p style='text-align:center;'>{paciente_info.get('NECES_ODONTO', '')}</p>", unsafe_allow_html=True)
-    st.markdown(f"<h5 style='text-align:center;'>📜 Histórico do Tratamento</h5><p style='text-align:center;'>{paciente_info.get('HISTORIA_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>🪥 Necessidades Odontológicas</h5><p style='text-align:center;'>{paciente_info.get('NECES_ODONTO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>📜 Histórico do Tratamento</h5><p style='text-align:center;'>{paciente_info.get('HISTORIA_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
 
 with col4:
-    st.markdown(f"<h5 style='text-align:center;'>🦷 Necessidades Ortodônticas</h5><p style='text-align:center;'>{paciente_info.get('NECES_ORTO', '')}</p>", unsafe_allow_html=True)
-    st.markdown(f"<h5 style='text-align:center;'>📌 Outros</h5><p style='text-align:center;'>{paciente_info.get('OUTROS', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>🦷 Necessidades Ortodônticas</h5><p style='text-align:center;'>{paciente_info.get('NECES_ORTO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>📌 Outros</h5><p style='text-align:center;'>{paciente_info.get('OUTROS', '')}</p>", unsafe_allow_html=True)
 
 with col5:
-    st.markdown(f"<h5 style='text-align:center;'>🔪 Necessidades Cirúrgicas</h5><p style='text-align:center;'>{paciente_info.get('NECES_CIRUR', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>🔪 Necessidades Cirúrgicas</h5><p style='text-align:center;'>{paciente_info.get('NECES_CIRUR', '')}</p>", unsafe_allow_html=True)
 
 st.write("______________________________")
 st.write("**Registros de Tratamento:**")
