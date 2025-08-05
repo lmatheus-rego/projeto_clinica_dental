@@ -108,14 +108,20 @@ try:
 
     if "PACIENTE_ID" in df_registros.columns:
         df_paciente = df_registros[df_registros["PACIENTE_ID"].astype(str) == id_paciente_str]
+
+        # Ordenar pela data em ordem decrescente (mais recente primeiro)
+        df_paciente["DATA_REGISTRO"] = pd.to_datetime(df_paciente["DATA_REGISTRO"], format="%d/%m/%Y", errors="coerce")
+        df_paciente = df_paciente.dropna(subset=["DATA_REGISTRO"])
+        df_paciente = df_paciente.sort_values(by="DATA_REGISTRO", ascending=False).reset_index(drop=True)
+
         if not df_paciente.empty:
             st.markdown("<h4>📜 Histórico de Evoluções</h4>", unsafe_allow_html=True)
-            for _, row in df_paciente.iterrows():
-                data = row.get("DATA_REGISTRO", "").strip()
+            for i, row in df_paciente.iterrows():
+                data = row["DATA_REGISTRO"].strftime("%d/%m/%Y")
                 descricao = row.get("EVOLUCAO", "").strip()
                 usuario = row.get("USUARIO", "").strip()
-                texto = f'No dia **{data}** foi realizada **{descricao}**, cadastrada pelo usuário **{usuario}**.'
-                st.write(texto)
+                texto = f"<p style='font-size: 0.85rem;'>#{i+1} No dia <b>{data}</b> foi realizada <b>{descricao}</b>, cadastrada pelo usuário <b>{usuario}</b>.</p>"
+                st.markdown(texto, unsafe_allow_html=True)
         else:
             st.info("Nenhuma evolução registrada para este paciente.")
     else:
