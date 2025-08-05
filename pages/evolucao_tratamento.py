@@ -89,11 +89,20 @@ sexo_opcoes = ["Masculino", "Feminino"]
 
 # Exibição
 st.write("______________________________")
-st.write(f"**Paciente:** {paciente_info['NOME']}")
-st.write(f"**FAO:** {paciente_info['FAO']}")
-st.write(f"**Idade:** {paciente_info['IDADE']}")
+st.markdown("<h2 style='text-align:center;'>📋 Dados Pessoais do Paciente</h2><hr>", unsafe_allow_html=True)
+
+espaco, col1, col2, col3, espaco2 = st.columns([1, 2, 2, 2, 1])
+
+with col1:
+    st.markdown(f"<h4 style='text-align:center;'>👤<br>{paciente_info['NOME']}</h4>", unsafe_allow_html=True)
+with col2:
+    st.markdown(f"<h4 style='text-align:center;'>🧭<br>FAO: {paciente_info['FAO']}</h4>", unsafe_allow_html=True)
+with col3:
+    st.markdown(f"<h4 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h4>", unsafe_allow_html=True)
+
+st.markdown("<hr>", unsafe_allow_html=True)
 st.write("______________________________")
-st.write("**Inserir Exames e Diagnósticos**")
+st.write("**Inserir/Alterar Diagnósticos**")
 
 with st.form(key="diagnostico_paciente"):
     col1, col2, col3, col4, col5 = st.columns(5)
