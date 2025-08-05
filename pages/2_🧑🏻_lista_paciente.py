@@ -94,11 +94,11 @@ def formatar_status(status):
         return f"<span style='color:red;'>🔴 {status}</span>"
     return status
 
-def formatar_genero(genero):
+def formatar_genero(genero, nome):
     if genero.lower() == "masculino":
-        return f"<span style='color:blue;'>♂️ {genero}</span>"
+        return f"<span style='color:blue;'>♂️ {nome}</span>"
     elif genero.lower() == "feminino":
-        return f"<span style='color:deeppink;'>♀️ {genero}</span>"
+        return f"<span style='color:deeppink;'>♀️ {nome}</span>"
     return genero
 
 for idx, row in df.iterrows():
@@ -107,7 +107,7 @@ for idx, row in df.iterrows():
     with col:
         with st.container():
             status_formatado = formatar_status(row.get("Status", "-"))
-            genero_formatado = formatar_genero(row.get("Sexo", "-"))
+            genero_formatado = formatar_genero(row.get("Sexo", "-"), (row.get("Nome", "-")))
 
             st.markdown(f"""
             <div class="card">
