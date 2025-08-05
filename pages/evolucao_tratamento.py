@@ -3,7 +3,14 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 
-# Inputs para evolução do tratamento
+# ------------------ OBTÉM ID DO PACIENTE DA URL ------------------
+id_paciente_str = st.query_params.get("idpaciente", None)
+if not id_paciente_str:
+    st.error("❌ ID do paciente não encontrado na URL.")
+    st.stop()
+
+# ------------------ INPUTS DE EVOLUÇÃO ------------------
+
 st.markdown("<h4 style='text-align:center;'>📈 Inserir Evolução do Tratamento</h4>", unsafe_allow_html=True)
 espaco, col1, col2, espaco2 = st.columns([1, 3, 3, 1])
 
@@ -12,7 +19,8 @@ with col1:
 with col2:
     descricao_evolucao = st.text_area("📝 Descrição da Evolução", height=100)
 
-# Botão de salvar evolução
+# ------------------ BOTÃO DE SALVAR ------------------
+
 salvar = st.button("💾 Salvar Evolução")
 if salvar:
     if descricao_evolucao.strip() == "":
@@ -58,8 +66,9 @@ if salvar:
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
 
+# ------------------ DADOS DO PACIENTE ------------------
 
-# ------------------ TÍTULO E INFORMAÇÕES DO PACIENTE ------------------
+# (Você deve já ter carregado o dicionário `paciente_info` antes desse trecho)
 
 st.markdown("<h2 style='text-align:center;'>📋 Dados E Registros do Paciente</h2><hr>", unsafe_allow_html=True)
 
