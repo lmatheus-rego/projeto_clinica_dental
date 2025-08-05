@@ -100,7 +100,7 @@ with col2:
 with col3:
     st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h5>", unsafe_allow_html=True)
 with col4:
-    st.markdown(f"<h5 style='text-align:center;'>🆔<br>Status: {paciente_info['STATUS']}</h5>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>✅<br>Status: {paciente_info['STATUS']}</h5>", unsafe_allow_html=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
