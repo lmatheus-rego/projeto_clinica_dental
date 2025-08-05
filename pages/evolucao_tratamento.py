@@ -59,8 +59,8 @@ paciente_info = paciente_df.iloc[0]
 # --- Inputs para evolução (empilhados verticalmente) ---
 st.markdown("<h3 style='text-align:center;'>📈 Inserir Evolução do Tratamento</h3>", unsafe_allow_html=True)
 
-descricao_evolucao = st.text_area("📝 Descrição da Evolução", height=100)
-data_evolucao = st.date_input("📅 Data da Evolução", format="DD/MM/YYYY")
+descricao_evolucao = st.text_area("📝 **Descrição da Evolução**", height=100)
+data_evolucao = st.date_input("📅 **Data da Evolução**", format="DD/MM/YYYY")
 if st.button("💾 Salvar Evolução"):
     if descricao_evolucao.strip() == "":
         st.warning("⚠️ A descrição da evolução não pode estar vazia.")
