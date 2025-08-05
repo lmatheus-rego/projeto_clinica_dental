@@ -100,13 +100,13 @@ st.write("**Inserir Exames e Diagnósticos**")
 with st.form(key="diagnostico_paciente"):
     col1, col2 = st.columns(2)
     with col1:
-        input_tipo_fissura = st.text_input("Tipo de Fissura", value=paciente_info.get["TIPO_FISSURA"])
+        input_tipo_fissura = st.text_area("**Tipo de Fissura:**", value=paciente_info.get("TIPO_FISSURA", ""))
         input_oclusais = st.text_area("**Características Oclusais:**", value=paciente_info.get("CARAC_OCLUSAIS", ""))
         input_odonto = st.text_area("**Necessidades Odontológicas:**", value=paciente_info.get("NECES_ODONTO", ""))
         input_outros = st.text_area("**Outros:**", value=paciente_info.get("OUTROS", ""))
         input_plano = st.text_area("**Plano de Tratamento:**", value=paciente_info.get("PLANO_TRATAMENTO", ""))
     with col2:
-        input_historia_tratamento = st.text_area("História do Tratamento", value=paciente_info.get["HISTORIA_TRATAMENTO"])
+        input_historia_tratamento = st.text_area("**Histórico do Tratamento:**", value=paciente_info.get("HISTORIA_TRATAMENTO", ""))
         input_orto = st.text_area("**Necessidades Ortodônticas:**", value=paciente_info.get("NECES_ORTO", ""))
         input_cirur = st.text_area("**Necessidades Cirúrgicas:**", value=paciente_info.get("NECES_CIRUR", ""))
         input_diagnostico = st.text_area("**Diagnóstico:**", value=paciente_info.get("DIAGNOSTICO", ""))
