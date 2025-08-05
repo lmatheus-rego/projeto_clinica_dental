@@ -101,11 +101,7 @@ with col3:
     st.markdown(f"<h4 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h4>", unsafe_allow_html=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
-st.write("**Registros de Tratamento:**")
 
-
-
-st.write("______________________________")
 st.markdown("<h4 style='text-align:center;'>📌 Diagnósticos e Planejamento</h4><hr>", unsafe_allow_html=True)
 
 col1, col2, col3, col4, col5 = st.columns(5)
@@ -128,3 +124,7 @@ with col4:
 
 with col5:
     st.markdown(f"<h5 style='text-align:center;'>🔪 Necessidades Cirúrgicas</h5><p style='text-align:center;'>{paciente_info.get('NECES_CIRUR', '')}</p>", unsafe_allow_html=True)
+
+st.write("______________________________")
+st.write("**Registros de Tratamento:**")
+
