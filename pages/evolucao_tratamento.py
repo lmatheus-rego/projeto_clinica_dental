@@ -89,7 +89,7 @@ sexo_opcoes = ["Masculino", "Feminino"]
 
 # Exibição
 st.write("______________________________")
-st.markdown("<h2 style='text-align:center;'>📋 Dados Pessoais do Paciente</h2><hr>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align:center;'>📋 Dados Registros do Paciente</h2><hr>", unsafe_allow_html=True)
 
 espaco, col1, col2, col3, espaco2 = st.columns([1, 2, 2, 2, 1])
 
