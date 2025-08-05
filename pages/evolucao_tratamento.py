@@ -101,7 +101,6 @@ with col3:
     st.markdown(f"<h4 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h4>", unsafe_allow_html=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
-st.write("______________________________")
 st.write("**Inserir/Alterar Diagnósticos**")
 
 with st.form(key="diagnostico_paciente"):
