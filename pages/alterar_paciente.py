@@ -18,13 +18,13 @@ def delete_page(main_script_path_str, page_name):
             del current_pages[key]
             break
     _on_pages_changed.send()
-    
+
 st.set_page_config(page_title="Alterar Paciente", page_icon="📝")
 if st.button("🔙 Voltar para lista de pacientes"):
     st.query_params.clear()  # Remove parâmetros da URL
 
     # Deleta a página atual (Ficha Clínica) do menu lateral
-    delete_page("1_🏠_home", "ficha_clinica")
+    delete_page("1_🏠_home", "alterar_paciente")
 
     # Redireciona para a lista de pacientes
     st.switch_page("pages/2_🧑🏻_lista_paciente.py")
