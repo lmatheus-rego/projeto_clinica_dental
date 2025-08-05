@@ -18,7 +18,7 @@ except ValueError:
     st.stop()
 
 # Conectar à planilha via gspread
-gc = gspread.service_account_from_dict(st.secrets["gsheets_connection"])
+gc = gspread.service_account_from_dict(st.secrets["gcp_service_account"])
 sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
 worksheet = sh.worksheet("Pacientes")
 dados = worksheet.get_all_records()
