@@ -10,34 +10,55 @@ import io
 st.set_page_config(layout="centered")
 st.title("Atualizar Documentos e Diagnóstico")
 
-# ID do paciente via URL
-id = st.query_params.get("idpaciente")
+# Obter o índice passado via query string (índice da linha)
+id_paciente_str = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente_str, list):
+    id_paciente_str = id_paciente_str[0]
+id_paciente_str = id_paciente_str.strip()
+try:
+    id_paciente = int(id_paciente_str)
+except ValueError:
+    id_paciente = None  # ou algum valor inválido
 
-# Autenticação Google Sheets e Drive
-scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
-credentials = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"], scopes=scope
-)
-client = gspread.authorize(credentials)
-sheet = client.open_by_key(st.secrets["sheet_id"]).sheet1
-dados = pd.DataFrame(sheet.get_all_records())
 
-# Conexão com Google Drive
-drive_service = build("drive", "v3", credentials=credentials)
+# --- Função para carregar dados da planilha ---
+def carregar_dados():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    service_account_info = {
+        "type": st.secrets["gcp_service_account"]["type"],
+        "project_id": st.secrets["gcp_service_account"]["project_id"],
+        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
+        "client_email": st.secrets["gcp_service_account"]["client_email"],
+        "client_id": st.secrets["gcp_service_account"]["client_id"],
+        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
+    }
+    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+    gc = gspread.authorize(credentials)
 
-# Pasta destino no Google Drive
-PASTA_DRIVE_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
+    SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+    sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
 
-# Buscar paciente
-paciente = dados[dados["ID"] == id]
-if paciente.empty:
-    st.error("Paciente não encontrado.")
+    dados = sheet.get_all_records()
+    df = pd.DataFrame(dados)
+    return df
+
+df = carregar_dados()
+df.columns = df.columns.str.strip().str.title()
+
+paciente_df = df[df["Id"].astype(str) == id_paciente_str]
+
+if paciente_df.empty:
+    st.error("❌ Paciente não encontrado.")
     st.stop()
 
-paciente_info = paciente.iloc[0]
+paciente = paciente_df.iloc[0]  # pega a linha do paciente correspondente
 sexo_opcoes = ["Masculino", "Feminino"]
 
 # Exibição
