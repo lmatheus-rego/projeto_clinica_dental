@@ -91,7 +91,6 @@ for idx, row in df.iterrows():
         with st.container():
             st.markdown(f"""
             <div class="card">
-                🧑 <b>ID: </b> {row.get("Id", "-")}<br>
                 🧑 <b>Nome: </b> {row.get("Nome", "-")}<br>
                 🎂 <b>Idade: </b> {row.get("Idade", "-")} anos<br>
                 🧭 <b>FAO: </b> {row.get("Fao", "-")}<br>
