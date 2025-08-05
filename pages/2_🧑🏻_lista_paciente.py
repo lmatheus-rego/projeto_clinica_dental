@@ -103,11 +103,11 @@ for idx, row in df.iterrows():
             with st.form(key=f"form_{idx}"):
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    ver = st.form_submit_button("📄 Ficha", use_container_width=True)
+                    ver = st.form_submit_button("📄 Ficha Clinica", use_container_width=True)
                 with col2:
-                    editar = st.form_submit_button("✏️ Editar", use_container_width=True)
+                    editar = st.form_submit_button("✏️ Editar Dados Pessoais", use_container_width=True)
                 with col3:
-                    exames = st.form_submit_button("🧾 Exames", use_container_width=True)
+                    exames = st.form_submit_button("🧾 Editar infos Clinicas e Exames", use_container_width=True)
                 with col4:
                     excluir = st.form_submit_button("🗑️ Excluir", use_container_width=True)
 
