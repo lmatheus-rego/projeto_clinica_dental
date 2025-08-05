@@ -51,3 +51,4 @@ urllib3==2.2.1
 watchdog==4.0.0
 google-auth
 google-api-python-client
+gspread
