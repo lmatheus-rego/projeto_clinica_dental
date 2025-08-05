@@ -85,7 +85,7 @@ if st.button("💾 Salvar Evolução"):
             st.error(f"Erro ao salvar evolução: {e}")
 
 # --- Título e dados pessoais ---
-st.markdown("<h2 style='text-align:center;'>📋 Dados E Registros do Paciente</h2><hr>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align:center;'>📋 Dados E Registros do Paciente</h3><hr>", unsafe_allow_html=True)
 status = paciente_info.get('STATUS', '').strip().lower()
 if status == 'ativo':
     status_emoji = "✅"
