@@ -42,18 +42,18 @@ with st.form(key="form_alterar_paciente"):
     st.subheader("🧾 Dados Pessoais")
     col1, col2 = st.columns(2)
     with col1:
-        nome = st.text_input("Nome", value=paciente_encontrado["nome"])
-        fao = st.text_input("FAO", value=paciente_encontrado["fao"])
-        idade = st.number_input("Idade", min_value=0, max_value=130, step=1, value=int(paciente_encontrado["idade"]))
-        data_nasc = st.date_input("Data de Nascimento", value=datetime.strptime(paciente_encontrado["data"], "%Y-%m-%d"))
-        sexo = st.selectbox("Sexo", options=sexo_opcoes, index=sexo_opcoes.index(paciente_encontrado["sexo"]))
+        nome = st.text_input("NOME", value=paciente_encontrado["NOME"])
+        fao = st.text_input("FAO", value=paciente_encontrado["FAO"])
+        idade = st.number_input("IDADE", min_value=0, max_value=130, step=1, value=int(paciente_encontrado["IDADE"]))
+        data_nasc = st.date_input("DATA", value=datetime.strptime(paciente_encontrado["DATA"], "%Y-%m-%d"))
+        sexo = st.selectbox("SEXO", options=sexo_opcoes, index=sexo_opcoes.index(paciente_encontrado["SEXO"]))
 
     with col2:
-        filiacao = st.text_input("Filiação", value=paciente_encontrado["filiacao"])
-        endereco = st.text_input("Endereço", value=paciente_encontrado["endereco"])
-        telefone = st.text_input("Telefone", value=paciente_encontrado["telefone"], placeholder="(92) 00000-0000")
-        tipo_fissura = st.text_input("Tipo de Fissura", value=paciente_encontrado["tipo_fissura"])
-        historia_tratamento = st.text_area("História do Tratamento", value=paciente_encontrado["historia_tratamento"])
+        filiacao = st.text_input("Filiação", value=paciente_encontrado["FILIACAO"])
+        endereco = st.text_input("Endereço", value=paciente_encontrado["ENDERECO"])
+        telefone = st.text_input("Telefone", value=paciente_encontrado["TELEFONE"], placeholder="(92) 00000-0000")
+        tipo_fissura = st.text_input("Tipo de Fissura", value=paciente_encontrado["TIPO_FISSURA"])
+        historia_tratamento = st.text_area("História do Tratamento", value=paciente_encontrado["HISTORIA_TRATAMENTO"])
 
     st.markdown("---")
     submitted = st.form_submit_button("💾 Confirmar Alteração")
