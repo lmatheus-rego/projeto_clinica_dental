@@ -102,6 +102,7 @@ if st.button("💾 Salvar Evolução"):
             ]
             aba.append_row(nova_linha)
             st.success("✅ Evolução registrada com sucesso!")
+            st.rerun()
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
 
