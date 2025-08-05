@@ -26,12 +26,11 @@ if st.button("🔙 Voltar para lista de pacientes"):
     st.query_params.clear()  # Remove parâmetros da URL
 
     # Deleta a página atual (Ficha Clínica) do menu lateral
-    delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
+    delete_page("1_🏠_home", "evolucao_tratamento")
 
     # Redireciona para a lista de pacientes
     st.switch_page("pages/2_🧑🏻_lista_paciente.py")
-st.title("📝 Alterar Cadastro do Paciente")
-st.title("Atualizar Documentos e Diagnóstico")
+st.title("🦷 Inserir Evolução no Tratamento")
 
 # ID da pasta no Google Drive
 PASTA_DRIVE_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
@@ -97,18 +96,21 @@ st.write("______________________________")
 st.write("**Inserir Exames e Diagnósticos**")
 
 with st.form(key="diagnostico_paciente"):
-    col1, col2 = st.columns(2)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         input_tipo_fissura = st.text_area("**Tipo de Fissura:**", value=paciente_info.get("TIPO_FISSURA", ""))
-        input_oclusais = st.text_area("**Características Oclusais:**", value=paciente_info.get("CARAC_OCLUSAIS", ""))
-        input_odonto = st.text_area("**Necessidades Odontológicas:**", value=paciente_info.get("NECES_ODONTO", ""))
-        input_outros = st.text_area("**Outros:**", value=paciente_info.get("OUTROS", ""))
-        input_plano = st.text_area("**Plano de Tratamento:**", value=paciente_info.get("PLANO_TRATAMENTO", ""))
-    with col2:
         input_historia_tratamento = st.text_area("**Histórico do Tratamento:**", value=paciente_info.get("HISTORIA_TRATAMENTO", ""))
-        input_orto = st.text_area("**Necessidades Ortodônticas:**", value=paciente_info.get("NECES_ORTO", ""))
-        input_cirur = st.text_area("**Necessidades Cirúrgicas:**", value=paciente_info.get("NECES_CIRUR", ""))
+    with col2:
+        input_plano = st.text_area("**Plano de Tratamento:**", value=paciente_info.get("PLANO_TRATAMENTO", ""))
         input_diagnostico = st.text_area("**Diagnóstico:**", value=paciente_info.get("DIAGNOSTICO", ""))
+    with col3:
+        input_odonto = st.text_area("**Necessidades Odontológicas:**", value=paciente_info.get("NECES_ODONTO", ""))
+        input_orto = st.text_area("**Necessidades Ortodônticas:**", value=paciente_info.get("NECES_ORTO", ""))
+    with col4:
+        input_cirur = st.text_area("**Necessidades Cirúrgicas:**", value=paciente_info.get("NECES_CIRUR", ""))
+        input_oclusais = st.text_area("**Características Oclusais:**", value=paciente_info.get("CARAC_OCLUSAIS", ""))
+    with col5:
+        input_outros = st.text_area("**Outros:**", value=paciente_info.get("OUTROS", ""))
         input_docs = st.file_uploader("**Inserir Exames:**", type=["pdf"], accept_multiple_files=True)
 
     submit = st.form_submit_button("Confirmar")
