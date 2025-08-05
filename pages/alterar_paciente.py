@@ -45,7 +45,7 @@ with st.form(key="form_alterar_paciente"):
         nome = st.text_input("NOME", value=paciente_encontrado["NOME"])
         fao = st.text_input("FAO", value=paciente_encontrado["FAO"])
         idade = st.number_input("IDADE", min_value=0, max_value=130, step=1, value=int(paciente_encontrado["IDADE"]))
-        data_nasc = st.date_input("DATA", value=datetime.strptime(paciente_encontrado["DATA"], "%d-%m-%Y"))
+        data_nasc = st.date_input("DATA", value=datetime.strptime(paciente_encontrado["DATA"], "%d/%m/%Y"))
         sexo = st.selectbox("SEXO", options=sexo_opcoes, index=sexo_opcoes.index(paciente_encontrado["SEXO"]))
 
     with col2:
