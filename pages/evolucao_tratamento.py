@@ -74,9 +74,9 @@ if st.button("💾 Salvar Evolução"):
                 aba.append_row(["ID", "Data", "Descrição", "Usuário"])
 
             nova_linha = [
+                descricao_evolucao.strip(),
                 id_paciente_str,
                 data_evolucao.strftime("%d/%m/%Y"),
-                descricao_evolucao.strip(),
                 "usuario_a_definir"
             ]
             aba.append_row(nova_linha)
