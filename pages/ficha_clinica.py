@@ -72,11 +72,14 @@ if paciente_df.empty:
 
 paciente = paciente_df.iloc[0]  # pega a linha do paciente correspondente
 # Ações
-if st.button("Voltar"):
-    st.query_params.clear()
-    delete_page("1_🏠_home", "ficha_clinica")
-    st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+if st.button("🔙 Voltar para lista de pacientes"):
+    st.query_params.clear()  # Remove parâmetros da URL
 
+    # Deleta a página atual (Ficha Clínica) do menu lateral
+    delete_page("1_🏠_home", "🗂️ Ficha Clínica do Paciente")
+
+    # Redireciona para a lista de pacientes
+    st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 # Exibe os dados do paciente
 st.title("🗂️ Ficha Clínica do Paciente")
 col1, col2 = st.columns(2)
