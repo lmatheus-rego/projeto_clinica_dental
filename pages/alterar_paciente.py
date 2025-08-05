@@ -3,7 +3,31 @@ import gspread
 from datetime import datetime
 import models.Paciente as Paciente
 from datetime import date
+from streamlit.source_util import (
+    page_icon_and_name,
+    calc_md5,
+    get_pages,
+    _on_pages_changed
+)
+
+# Função para deletar páginas do menu lateral
+def delete_page(main_script_path_str, page_name):
+    current_pages = get_pages(main_script_path_str)
+    for key, value in current_pages.items():
+        if value['page_name'] == page_name:
+            del current_pages[key]
+            break
+    _on_pages_changed.send()
+    
 st.set_page_config(page_title="Alterar Paciente", page_icon="📝")
+if st.button("🔙 Voltar para lista de pacientes"):
+    st.query_params.clear()  # Remove parâmetros da URL
+
+    # Deleta a página atual (Ficha Clínica) do menu lateral
+    delete_page("1_🏠_home", "ficha_clinica")
+
+    # Redireciona para a lista de pacientes
+    st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 st.title("📝 Alterar Cadastro do Paciente")
 
 def calcular_idade(data_nascimento: date) -> int:
