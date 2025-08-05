@@ -111,7 +111,7 @@ for idx, row in df.iterrows():
 
             st.markdown(f"""
             <div class="card">
-                🧑 <b>Nome: </b> {genero_formatado}<br>
+                 </b> {genero_formatado}<br>
                 🎂 <b>Idade: </b> {row.get("Idade", "-")} anos<br>
                 🧭 <b>FAO: </b> {row.get("Fao", "-")}<br>
                 💉 <b>Tipo de Fissura: </b> {row.get("Tipo_Fissura", "-")}<br>
