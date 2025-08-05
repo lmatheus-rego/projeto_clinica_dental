@@ -76,7 +76,7 @@ if st.button("🔙 Voltar para lista de pacientes"):
     st.query_params.clear()  # Remove parâmetros da URL
 
     # Deleta a página atual (Ficha Clínica) do menu lateral
-    delete_page("1_🏠_home", "🗂️ Ficha Clínica do Paciente")
+    delete_page("1_🏠_home", "ficha_clinica")
 
     # Redireciona para a lista de pacientes
     st.switch_page("pages/2_🧑🏻_lista_paciente.py")
