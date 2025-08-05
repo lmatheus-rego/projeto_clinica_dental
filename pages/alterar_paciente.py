@@ -44,7 +44,6 @@ with st.form(key="form_alterar_paciente"):
     with col1:
         nome = st.text_input("NOME", value=paciente_encontrado["NOME"])
         fao = st.text_input("FAO", value=paciente_encontrado["FAO"])
-        idade = st.number_input("IDADE", min_value=0, max_value=130, step=1, value=int(paciente_encontrado["IDADE"]))
         data_nasc = st.date_input("DATA", value=datetime.strptime(paciente_encontrado["DATA"], "%d/%m/%Y"))
         sexo = st.selectbox("SEXO", options=sexo_opcoes, index=sexo_opcoes.index(paciente_encontrado["SEXO"]))
 
@@ -64,7 +63,6 @@ if submitted:
         id_paciente,
         nome,
         fao,
-        idade,
         data_nasc.strftime("%Y-%m-%d"),
         sexo,
         filiacao,
@@ -77,7 +75,7 @@ if submitted:
     # Encontrar índice da linha na planilha (considerando cabeçalho na linha 1)
     index_linha = None
     for i, row in enumerate(dados):
-        if str(row["id"]) == str(id_paciente):
+        if str(row["ID"]) == str(id_paciente):
             index_linha = i + 2  # +2 pois gspread é 1-based e linha 1 é cabeçalho
             break
 
