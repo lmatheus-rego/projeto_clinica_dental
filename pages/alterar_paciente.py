@@ -26,7 +26,7 @@ dados = worksheet.get_all_records()
 # Buscar paciente na planilha
 paciente_encontrado = None
 for row in dados:
-    if str(row["id"]) == str(id_paciente):
+    if str(row["Id"]) == str(id_paciente):
         paciente_encontrado = row
         break
 
