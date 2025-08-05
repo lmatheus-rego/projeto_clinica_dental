@@ -108,8 +108,7 @@ for idx, row in df.iterrows():
                     editar = st.form_submit_button("✏️ Editar Dados Pessoais", use_container_width=True)
                 with col3:
                     exames = st.form_submit_button("🧾 Editar infos Clinicas e Exames", use_container_width=True)
-                with col4:
-                    excluir = st.form_submit_button("🗑️ Excluir", use_container_width=True)
+
 
                 if ver:
                     id_str = str(row.get("Id", "")).strip()
@@ -128,9 +127,6 @@ for idx, row in df.iterrows():
                     st.query_params = {"idpaciente": id_str}
                     add_page("1_🏠_home", "inserir_exames_e_diagnosticos")
                     st.switch_page("pages/inserir_exames_e_diagnosticos.py")
-
-                elif excluir:
-                    st.warning("⚠️ Exclusão via planilha ainda não está implementada.")
 
 st.markdown("---")
 st.caption(f"👥 Total de pacientes: **{len(df)}**")
