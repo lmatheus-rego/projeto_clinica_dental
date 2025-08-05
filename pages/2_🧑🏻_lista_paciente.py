@@ -101,7 +101,7 @@ for idx, row in df.iterrows():
             """, unsafe_allow_html=True)
 
             with st.form(key=f"form_{idx}"):
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     ver = st.form_submit_button("📄 Ficha Clinica", use_container_width=True)
                 with col2:
