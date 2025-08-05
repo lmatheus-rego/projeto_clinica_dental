@@ -27,7 +27,7 @@ dados = worksheet.get_all_records()
 paciente_encontrado = None
 for row in dados:
     st.write(row)
-    if str(row["Id"]) == str(id_paciente):
+    if str(row["ID"]) == str(id_paciente):
         paciente_encontrado = row
         break
 
