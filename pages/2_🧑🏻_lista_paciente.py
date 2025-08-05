@@ -82,10 +82,10 @@ if busca:
 
 st.markdown("---")
 
-colunas = st.columns(3)
+colunas = st.columns(4)
 
 for idx, row in df.iterrows():
-    col = colunas[idx % 3]
+    col = colunas[idx % 4]
 
     with col:
         with st.container():
@@ -100,14 +100,17 @@ for idx, row in df.iterrows():
             """, unsafe_allow_html=True)
 
             with st.form(key=f"form_{idx}"):
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    ver = st.form_submit_button("📄 Ficha Clinica", use_container_width=True)
-                with col2:
-                    editar = st.form_submit_button("✏️ Editar Dados Pessoais", use_container_width=True)
-                with col3:
-                    exames = st.form_submit_button("🧾 Editar infos Clinicas e Exames", use_container_width=True)
+                bcol1, bcol2 = st.columns(2)
+                bcol3, bcol4 = st.columns(2)
 
+                with bcol1:
+                    ver = st.form_submit_button("📄 Ficha Clínica", use_container_width=True)
+                with bcol2:
+                    editar = st.form_submit_button("✏️ Editar Dados Pessoais", use_container_width=True)
+                with bcol3:
+                    exames = st.form_submit_button("🧾 Inserir Docs e Exames", use_container_width=True)
+                with bcol4:
+                    excluir = st.form_submit_button("📄 Registro de Consulta", use_container_width=True)  # Opcional
 
                 if ver:
                     id_str = str(row.get("Id", "")).strip()
@@ -126,6 +129,10 @@ for idx, row in df.iterrows():
                     st.query_params = {"idpaciente": id_str}
                     add_page("1_🏠_home", "inserir_exames_e_diagnosticos")
                     st.switch_page("pages/inserir_exames_e_diagnosticos.py")
+
+                elif excluir:
+                    st.warning("Função de exclusão ainda não implementada.")
+
 
 st.markdown("---")
 st.caption(f"👥 Total de pacientes: **{len(df)}**")
