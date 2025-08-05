@@ -5,6 +5,22 @@ import gspread
 from googleapiclient.discovery import build
 from streamlit_pdf_viewer import pdf_viewer
 import urllib.request
+from streamlit.source_util import (
+    page_icon_and_name,
+    calc_md5,
+    get_pages,
+    _on_pages_changed
+)
+
+
+# Função para deletar páginas do menu lateral
+def delete_page(main_script_path_str, page_name):
+    current_pages = get_pages(main_script_path_str)
+    for key, value in current_pages.items():
+        if value['page_name'] == page_name:
+            del current_pages[key]
+            break
+    _on_pages_changed.send()
 
 # Obter o índice passado via query string (índice da linha)
 id_paciente_str = st.query_params.get("idpaciente", "")
@@ -55,6 +71,11 @@ if paciente_df.empty:
     st.stop()
 
 paciente = paciente_df.iloc[0]  # pega a linha do paciente correspondente
+# Ações
+if st.button("Voltar"):
+    st.query_params.clear()
+    delete_page("1_🏠_home", "ficha_clinica")
+    st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
 # Exibe os dados do paciente
 st.title("🗂️ Ficha Clínica do Paciente")
@@ -89,11 +110,6 @@ with col2:
 
 st.write("**Registro Clínico:**")
 st.write(paciente.get("Registro Clínico", "-"))
-
-# Ações
-if st.button("Voltar"):
-    st.query_params.clear()
-    st.experimental_rerun()
 
 # --- Função para listar arquivos PDF do paciente ---
 def listar_pdfs_paciente(paciente_id_str: str):
