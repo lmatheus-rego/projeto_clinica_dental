@@ -84,18 +84,39 @@ st.markdown("---")
 
 colunas = st.columns(4)
 
+# Funções auxiliares para formatar os valores
+def formatar_status(status):
+    if status.lower() == "ativo":
+        return f"<span style='color:green;'>🟢 {status}</span>"
+    elif status.lower() == "ausente":
+        return f"<span style='color:orange;'>🟡 {status}</span>"
+    elif status.lower() == "inativo":
+        return f"<span style='color:red;'>🔴 {status}</span>"
+    return status
+
+def formatar_genero(genero):
+    if genero.lower() == "masculino":
+        return f"<span style='color:blue;'>♂️ {genero}</span>"
+    elif genero.lower() == "feminino":
+        return f"<span style='color:deeppink;'>♀️ {genero}</span>"
+    return genero
+
 for idx, row in df.iterrows():
     col = colunas[idx % 4]
 
     with col:
         with st.container():
+            status_formatado = formatar_status(row.get("Status", "-"))
+            genero_formatado = formatar_genero(row.get("Genero", "-"))
+
             st.markdown(f"""
             <div class="card">
                 🧑 <b>Nome: </b> {row.get("Nome", "-")}<br>
                 🎂 <b>Idade: </b> {row.get("Idade", "-")} anos<br>
                 🧭 <b>FAO: </b> {row.get("Fao", "-")}<br>
                 💉 <b>Tipo de Fissura: </b> {row.get("Tipo_Fissura", "-")}<br>
-                📌 <b>Status: </b> {row.get("Status", "-")}
+                🚻 <b>Gênero: </b> {genero_formatado}<br>
+                📌 <b>Status: </b> {status_formatado}
             </div>
             """, unsafe_allow_html=True)
 
@@ -135,7 +156,6 @@ for idx, row in df.iterrows():
                     st.query_params = {"idpaciente": id_str}
                     add_page("1_🏠_home", "evolucao_tratamento")
                     st.switch_page("pages/evolucao_tratamento.py")
-
 
 st.markdown("---")
 st.caption(f"👥 Total de pacientes: **{len(df)}**")
