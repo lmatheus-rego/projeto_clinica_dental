@@ -31,6 +31,7 @@ st.title("Projeto Céu da Boca")
 delete_page("1_🏠_home", "ficha_clinica")
 delete_page("1_🏠_home", "alterar_paciente")
 delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
+delete_page("1_🏠_home", "evolucao_tratamento")
 
 # Função para carregar dados de planilha privada usando apenas os secrets da nuvem
 def carregar_dados():

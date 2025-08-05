@@ -131,7 +131,10 @@ for idx, row in df.iterrows():
                     st.switch_page("pages/inserir_exames_e_diagnosticos.py")
 
                 elif excluir:
-                    st.warning("Função de exclusão ainda não implementada.")
+                    id_str = str(row.get("Id", "")).strip()
+                    st.query_params = {"idpaciente": id_str}
+                    add_page("1_🏠_home", "evolucao_tratamento")
+                    st.switch_page("pages/evolucao_tratamento.py")
 
 
 st.markdown("---")
