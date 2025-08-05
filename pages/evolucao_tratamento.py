@@ -3,23 +3,7 @@ from datetime import datetime
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-from streamlit.source_util import (
-    page_icon_and_name,
-    calc_md5,
-    get_pages,
-    _on_pages_changed
-)
 
-
-def delete_page(main_script_path_str, page_name):
-    current_pages = get_pages(main_script_path_str)
-    for key, value in current_pages.items():
-        if value['page_name'] == page_name:
-            del current_pages[key]
-            break
-    _on_pages_changed.send()
 # --- Autenticação e carregamento da planilha ---
 def carregar_dados():
     scopes = [
@@ -38,13 +22,6 @@ def carregar_dados():
         "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
         "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
     }
-
-    if st.button("🔙 Voltar para lista de pacientes"):
-        st.query_params.clear()  # Remove parâmetros da URL
-        delete_page("1_🏠_home", "alterar_paciente")
-        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
-
-
 
     credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
     gc = gspread.authorize(credentials)
@@ -82,6 +59,7 @@ st.markdown("<h3 style='text-align:center;'>📈 Inserir Evolução do Tratament
 
 descricao_evolucao = st.text_area("📝 **Descrição da Evolução**", height=100)
 data_evolucao = st.date_input("📅 **Data da Evolução**", format="DD/MM/YYYY")
+
 if st.button("💾 Salvar Evolução"):
     if descricao_evolucao.strip() == "":
         st.warning("⚠️ A descrição da evolução não pode estar vazia.")
@@ -95,16 +73,35 @@ if st.button("💾 Salvar Evolução"):
                 aba.append_row(["ID", "Data", "Descrição", "Usuário"])
 
             nova_linha = [
-                descricao_evolucao.strip(),
-                id_paciente_str,
+                id_paciente_str,  # ID do paciente
                 data_evolucao.strftime("%d/%m/%Y"),
+                descricao_evolucao.strip(),
                 "usuario_a_definir"
             ]
             aba.append_row(nova_linha)
             st.success("✅ Evolução registrada com sucesso!")
-            st.rerun()
+            st.experimental_rerun()  # Atualiza para mostrar as evoluções atualizadas
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
+
+# --- Listagem das evoluções do paciente ---
+try:
+    sh = gc.open_by_key(SPREADSHEET_ID)
+    aba = sh.worksheet("Registros")
+    registros = aba.get_all_records()
+    df_registros = pd.DataFrame(registros)
+    # Filtra pelo paciente atual
+    df_paciente = df_registros[df_registros["ID"].astype(str) == id_paciente_str]
+
+    if not df_paciente.empty:
+        st.markdown("<h4>📜 Histórico de Evoluções</h4>", unsafe_allow_html=True)
+        for _, row in df_paciente.iterrows():
+            texto = f'No dia "{row["Data"]}" foi realizada "{row["Descrição"]}", cadastrada pelo usuário "{row["Usuário"]}".'
+            st.write(texto)
+    else:
+        st.info("Nenhuma evolução registrada para este paciente.")
+except Exception as e:
+    st.error(f"Erro ao carregar evoluções: {e}")
 
 # --- Título e dados pessoais ---
 st.markdown("<h3 style='text-align:center;'>📋 Dados E Registros do Paciente</h3><hr>", unsafe_allow_html=True)
