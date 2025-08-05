@@ -89,8 +89,6 @@ with st.form(key="form_alterar_paciente"):
         filiacao = st.text_input("Filiação", value=paciente_encontrado["FILIACAO"])
         endereco = st.text_input("Endereço", value=paciente_encontrado["ENDERECO"])
         telefone = st.text_input("Telefone", value=paciente_encontrado["TELEFONE"], placeholder="(92) 00000-0000")
-        tipo_fissura = st.text_input("Tipo de Fissura", value=paciente_encontrado["TIPO_FISSURA"])
-        historia_tratamento = st.text_area("História do Tratamento", value=paciente_encontrado["HISTORIA_TRATAMENTO"])
 
     st.markdown("---")
     submitted = st.form_submit_button("💾 Confirmar Alteração")
@@ -107,9 +105,7 @@ if submitted:
         filiacao,
         endereco,
         telefone,
-        fao,
-        tipo_fissura,
-        historia_tratamento
+        fao
     ]
 
     # Encontrar índice da linha na planilha (considerando cabeçalho na linha 1)
