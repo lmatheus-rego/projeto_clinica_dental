@@ -2,9 +2,16 @@ import streamlit as st
 import gspread
 from datetime import datetime
 import models.Paciente as Paciente
-
+from datetime import date
 st.set_page_config(page_title="Alterar Paciente", page_icon="📝")
 st.title("📝 Alterar Cadastro do Paciente")
+
+def calcular_idade(data_nascimento: date) -> int:
+    hoje = date.today()
+    idade = hoje.year - data_nascimento.year - (
+        (hoje.month, hoje.day) < (data_nascimento.month, data_nascimento.day)
+    )
+    return idade
 
 # Obter o ID do paciente via query params
 id_paciente_str = st.query_params.get("idpaciente", "")
@@ -59,11 +66,13 @@ with st.form(key="form_alterar_paciente"):
 
 # Salvar alterações na planilha
 if submitted:
+    idade = calcular_idade(data_nasc)
     nova_linha = [
         id_paciente,
         nome,
         fao,
-        data_nasc.strftime("%Y-%m-%d"),
+        idade,
+        data_nasc.strftime("%d/%m/%Y"),
         sexo,
         filiacao,
         endereco,
@@ -82,6 +91,6 @@ if submitted:
     if index_linha:
         worksheet.update(f"A{index_linha}:K{index_linha}", [nova_linha])
         st.success("✅ Dados do paciente atualizados com sucesso!")
-        st.experimental_rerun()
+        st.rerun()
     else:
         st.error("Erro ao localizar a linha do paciente na planilha.")
