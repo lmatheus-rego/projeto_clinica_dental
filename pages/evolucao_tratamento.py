@@ -91,16 +91,19 @@ status_opcoes = ["Ativo", "Inativo", "Ausente"]
 st.write("______________________________")
 st.markdown("<h2 style='text-align:center;'>📋 Dados E Registros do Paciente</h2><hr>", unsafe_allow_html=True)
 
-espaco, col1, col2, col3, espaco2 = st.columns([1, 2, 2, 2, 1])
+espaco, col1, col2, col3, col4, espaco2 = st.columns([1, 2, 2, 2, 2, 1])
 
 with col1:
-    st.markdown(f"<h5 style='text-align:center;'>👤<br>{paciente_info['NOME']}</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>👤<br>{paciente_info['NOME']}</h5>", unsafe_allow_html=True)
 with col2:
-    st.markdown(f"<h5 style='text-align:center;'>🧭<br>FAO: {paciente_info['FAO']}</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>🧭<br>FAO: {paciente_info['FAO']}</h5>", unsafe_allow_html=True)
 with col3:
-    st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h5>", unsafe_allow_html=True)
+with col4:
+    st.markdown(f"<h5 style='text-align:center;'>🆔<br>Status: {paciente_info['STATUS']}</h5>", unsafe_allow_html=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
+
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
