@@ -102,8 +102,6 @@ with col3:
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-st.markdown("<h4 style='text-align:center;'>📌 Diagnósticos e Planejamento</h4><hr>", unsafe_allow_html=True)
-
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
