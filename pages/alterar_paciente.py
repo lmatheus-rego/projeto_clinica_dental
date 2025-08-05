@@ -1,16 +1,19 @@
 import streamlit as st
-from datetime import datetime
-import pandas as pd
 import gspread
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-import io
+from datetime import datetime
+import models.Paciente as Paciente
+from datetime import date
+st.set_page_config(page_title="Alterar Paciente", page_icon="📝")
+st.title("📝 Alterar Cadastro do Paciente")
 
-st.set_page_config(layout="centered")
-st.title("Atualizar Documentos e Diagnóstico")
+def calcular_idade(data_nascimento: date) -> int:
+    hoje = date.today()
+    idade = hoje.year - data_nascimento.year - (
+        (hoje.month, hoje.day) < (data_nascimento.month, data_nascimento.day)
+    )
+    return idade
 
-# Obter o índice passado via query string (índice da linha)
+# Obter o ID do paciente via query params
 id_paciente_str = st.query_params.get("idpaciente", "")
 if isinstance(id_paciente_str, list):
     id_paciente_str = id_paciente_str[0]
@@ -18,102 +21,75 @@ id_paciente_str = id_paciente_str.strip()
 try:
     id_paciente = int(id_paciente_str)
 except ValueError:
-    id_paciente = None  # ou algum valor inválido
-
-
-# --- Função para carregar dados da planilha ---
-def carregar_dados():
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    service_account_info = {
-        "type": st.secrets["gcp_service_account"]["type"],
-        "project_id": st.secrets["gcp_service_account"]["project_id"],
-        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
-        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
-        "client_email": st.secrets["gcp_service_account"]["client_email"],
-        "client_id": st.secrets["gcp_service_account"]["client_id"],
-        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
-        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
-        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
-        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
-    }
-    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
-    gc = gspread.authorize(credentials)
-
-    SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
-    sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
-
-    dados = sheet.get_all_records()
-    df = pd.DataFrame(dados)
-    return df
-
-df = carregar_dados()
-df.columns = df.columns.str.strip().str.title()
-
-paciente_df = df[df["Id"].astype(str) == id_paciente_str]
-
-if paciente_df.empty:
-    st.error("❌ Paciente não encontrado.")
+    st.error("ID do paciente inválido.")
     st.stop()
 
-paciente = paciente_df.iloc[0]  # pega a linha do paciente correspondente
+# Conectar à planilha via gspread
+gc = gspread.service_account_from_dict(st.secrets["gcp_service_account"])
+sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
+worksheet = sh.worksheet("Pacientes")
+dados = worksheet.get_all_records()
+
+# Buscar paciente na planilha
+paciente_encontrado = None
+for row in dados:
+    if str(row["ID"]) == str(id_paciente):
+        paciente_encontrado = row
+        break
+
+if not paciente_encontrado:
+    st.error("Paciente não encontrado.")
+    st.stop()
+
 sexo_opcoes = ["Masculino", "Feminino"]
 
-# Exibição
-st.write("______________________________")
-st.write(f"**Paciente:** {paciente_info['NOME']}")
-st.write(f"**FAO:** {paciente_info['FAO']}")
-st.write(f"**Tipo de Fissura:** {paciente_info['TIPO_FISSURA']}")
-st.write("**História do Tratamento:**")
-st.write(f"{paciente_info.get('HISTORIA', '')}")
-st.write("______________________________")
-st.write("**Inserir Exames e Diagnósticos**")
-
-with st.form(key="diagnostico_paciente"):
+# Formulário para edição
+with st.form(key="form_alterar_paciente"):
+    st.subheader("🧾 Dados Pessoais")
     col1, col2 = st.columns(2)
     with col1:
-        input_oclusais = st.text_area("**Características Oclusais:**", value=paciente_info.get("CARAC_OCLUSAIS", ""))
-        input_odonto = st.text_area("**Necessidades Odontológicas:**", value=paciente_info.get("NECES_ODONTO", ""))
-        input_outros = st.text_area("**Outros:**", value=paciente_info.get("OUTROS", ""))
-        input_plano = st.text_area("**Plano de Tratamento:**", value=paciente_info.get("PLANO_TRATAMENTO", ""))
+        nome = st.text_input("NOME", value=paciente_encontrado["NOME"])
+        fao = st.text_input("FAO", value=paciente_encontrado["FAO"])
+        data_nasc = st.date_input("DATA", value=datetime.strptime(paciente_encontrado["DATA"], "%d/%m/%Y"))
+        sexo = st.selectbox("SEXO", options=sexo_opcoes, index=sexo_opcoes.index(paciente_encontrado["SEXO"]))
+
     with col2:
-        input_orto = st.text_area("**Necessidades Ortodônticas:**", value=paciente_info.get("NECES_ORTO", ""))
-        input_cirur = st.text_area("**Necessidades Cirúrgicas:**", value=paciente_info.get("NECES_CIRUR", ""))
-        input_diagnostico = st.text_area("**Diagnóstico:**", value=paciente_info.get("DIAGNOSTICO", ""))
-        input_docs = st.file_uploader("**Inserir Exames:**", type=["pdf"], accept_multiple_files=True)
+        filiacao = st.text_input("Filiação", value=paciente_encontrado["FILIACAO"])
+        endereco = st.text_input("Endereço", value=paciente_encontrado["ENDERECO"])
+        telefone = st.text_input("Telefone", value=paciente_encontrado["TELEFONE"], placeholder="(92) 00000-0000")
+        tipo_fissura = st.text_input("Tipo de Fissura", value=paciente_encontrado["TIPO_FISSURA"])
+        historia_tratamento = st.text_area("História do Tratamento", value=paciente_encontrado["HISTORIA_TRATAMENTO"])
 
-    submit = st.form_submit_button("Confirmar")
+    st.markdown("---")
+    submitted = st.form_submit_button("💾 Confirmar Alteração")
 
-if submit:
-    # Atualizar planilha
-    idx = paciente.index[0]
-    dados.at[idx, "CARAC_OCLUSAIS"] = input_oclusais
-    dados.at[idx, "NECES_ODONTO"] = input_odonto
-    dados.at[idx, "OUTROS"] = input_outros
-    dados.at[idx, "PLANO_TRATAMENTO"] = input_plano
-    dados.at[idx, "NECES_ORTO"] = input_orto
-    dados.at[idx, "NECES_CIRUR"] = input_cirur
-    dados.at[idx, "DIAGNOSTICO"] = input_diagnostico
-    sheet.update([dados.columns.values.tolist()] + dados.values.tolist())
+# Salvar alterações na planilha
+if submitted:
+    idade = calcular_idade(data_nasc)
+    nova_linha = [
+        id_paciente,
+        nome,
+        idade,
+        data_nasc.strftime("%d/%m/%Y"),
+        sexo,
+        filiacao,
+        endereco,
+        telefone,
+        fao,
+        tipo_fissura,
+        historia_tratamento
+    ]
 
-    # Upload para o Google Drive
-    if input_docs:
-        for arquivo in input_docs:
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            nome_arquivo = f"P{id}#{timestamp}_{arquivo.name}"
+    # Encontrar índice da linha na planilha (considerando cabeçalho na linha 1)
+    index_linha = None
+    for i, row in enumerate(dados):
+        if str(row["ID"]) == str(id_paciente):
+            index_linha = i + 2  # +2 pois gspread é 1-based e linha 1 é cabeçalho
+            break
 
-            media = MediaIoBaseUpload(arquivo, mimetype="application/pdf")
-            file_metadata = {
-                "name": nome_arquivo,
-                "parents": [PASTA_DRIVE_ID]
-            }
-
-            drive_service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields="id"
-            ).execute()
-
-    st.success("Paciente atualizado com sucesso!")
+    if index_linha:
+        worksheet.update(f"A{index_linha}:K{index_linha}", [nova_linha])
+        st.success("✅ Dados do paciente atualizados com sucesso!")
+        st.rerun()
+    else:
+        st.error("Erro ao localizar a linha do paciente na planilha.")
