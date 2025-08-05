@@ -22,7 +22,6 @@ def delete_page(main_script_path_str, page_name):
             break
     _on_pages_changed.send()
 
-st.set_page_config(layout="centered")
 if st.button("🔙 Voltar para lista de pacientes"):
     st.query_params.clear()  # Remove parâmetros da URL
 
