@@ -120,7 +120,7 @@ try:
                 data = row["DATA_REGISTRO"].strftime("%d/%m/%Y")
                 descricao = row.get("EVOLUCAO", "").strip()
                 usuario = row.get("USUARIO", "").strip()
-                texto = f"<p style='font-size: 0.85rem;'>📄 <b>{data}</b> foi realizada <b>{descricao}</b>, cadastrada pelo usuário <b>{usuario}</b>.</p>"
+                texto = f"<p style='font-size: 0.85rem;'>📄 <b>{data}</b> - <b>{descricao}</b>. Registro cadastrado pelo usuário <b>{usuario}</b>.</p>"
                 st.markdown(texto, unsafe_allow_html=True)
         else:
             st.info("Nenhuma evolução registrada para este paciente.")
