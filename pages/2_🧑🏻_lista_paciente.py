@@ -110,7 +110,7 @@ for idx, row in df.iterrows():
                 with bcol3:
                     exames = st.form_submit_button("🧾 Inserir Docs e Exames", use_container_width=True)
                 with bcol4:
-                    excluir = st.form_submit_button("📄 Registro de Consulta", use_container_width=True)  # Opcional
+                    excluir = st.form_submit_button("🦷 Evoluir Tratamento", use_container_width=True)  # Opcional
 
                 if ver:
                     id_str = str(row.get("Id", "")).strip()

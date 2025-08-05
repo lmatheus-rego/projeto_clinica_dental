@@ -162,4 +162,5 @@ if submit:
                 fields="id"
             ).execute()
 
-    st.success("✅ Paciente atualizado com sucesso!")
+    st.success("✅ Tratamento atualizado com sucesso!")
+    st.rerun()
