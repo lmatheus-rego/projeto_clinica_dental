@@ -95,9 +95,9 @@ def formatar_status(status):
     return status
 
 def formatar_genero(genero):
-    if genero.lower() == "Masculino":
+    if genero.lower() == "masculino":
         return f"<span style='color:blue;'>♂️ {genero}</span>"
-    elif genero.lower() == "Feminino":
+    elif genero.lower() == "feminino":
         return f"<span style='color:deeppink;'>♀️ {genero}</span>"
     return genero
 
