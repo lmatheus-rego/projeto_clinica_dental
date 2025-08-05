@@ -5,6 +5,40 @@ from google.oauth2.service_account import Credentials
 
 # ------------------ OBTÉM ID DO PACIENTE DA URL ------------------
 id_paciente_str = st.query_params.get("idpaciente", None)
+# Conectar e buscar o paciente pelo ID
+try:
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    credentials = Credentials.from_service_account_info(
+        {
+            "type": st.secrets["gcp_service_account"]["type"],
+            "project_id": st.secrets["gcp_service_account"]["project_id"],
+            "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+            "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
+            "client_email": st.secrets["gcp_service_account"]["client_email"],
+            "client_id": st.secrets["gcp_service_account"]["client_id"],
+            "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+            "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+            "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+            "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"]
+        },
+        scopes=scopes
+    )
+    gc = gspread.authorize(credentials)
+    sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
+    worksheet_pacientes = sh.worksheet("Pacientes")
+    dados = worksheet_pacientes.get_all_records()
+
+    paciente_info = next((p for p in dados if str(p["ID"]) == id_paciente_str), None)
+    if not paciente_info:
+        st.error("❌ Paciente não encontrado.")
+        st.stop()
+except Exception as e:
+    st.error(f"Erro ao buscar paciente: {e}")
+    st.stop()
+
 if not id_paciente_str:
     st.error("❌ ID do paciente não encontrado na URL.")
     st.stop()
