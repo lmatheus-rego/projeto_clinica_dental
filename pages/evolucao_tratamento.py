@@ -1,93 +1,80 @@
-from datetime import datetime
 import streamlit as st
+from datetime import datetime
+import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
 
-# ------------------ OBTÉM ID DO PACIENTE DA URL ------------------
-id_paciente_str = st.query_params.get("idpaciente", None)
-# Conectar e buscar o paciente pelo ID
-try:
+# --- Autenticação e carregamento da planilha ---
+def carregar_dados():
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    credentials = Credentials.from_service_account_info(
-        {
-            "type": st.secrets["gcp_service_account"]["type"],
-            "project_id": st.secrets["gcp_service_account"]["project_id"],
-            "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
-            "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
-            "client_email": st.secrets["gcp_service_account"]["client_email"],
-            "client_id": st.secrets["gcp_service_account"]["client_id"],
-            "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
-            "token_uri": st.secrets["gcp_service_account"]["token_uri"],
-            "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"]
-        },
-        scopes=scopes
-    )
+    service_account_info = {
+        "type": st.secrets["gcp_service_account"]["type"],
+        "project_id": st.secrets["gcp_service_account"]["project_id"],
+        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
+        "client_email": st.secrets["gcp_service_account"]["client_email"],
+        "client_id": st.secrets["gcp_service_account"]["client_id"],
+        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
+    }
+
+    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
     gc = gspread.authorize(credentials)
-    sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
-    worksheet_pacientes = sh.worksheet("Pacientes")
-    dados = worksheet_pacientes.get_all_records()
 
-    paciente_info = next((p for p in dados if str(p["ID"]) == id_paciente_str), None)
-    if not paciente_info:
-        st.error("❌ Paciente não encontrado.")
-        st.stop()
-except Exception as e:
-    st.error(f"Erro ao buscar paciente: {e}")
+    SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+    sheet = gc.open_by_key(SPREADSHEET_ID).sheet1
+
+    df = pd.DataFrame(sheet.get_all_records())
+    return df, sheet, credentials, gc, SPREADSHEET_ID
+
+df, sheet, credentials, gc, SPREADSHEET_ID = carregar_dados()
+df.columns = df.columns.str.strip().str.upper()
+
+# ID do paciente via query
+id_paciente_str = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente_str, list):
+    id_paciente_str = id_paciente_str[0]
+id_paciente_str = id_paciente_str.strip()
+try:
+    id_paciente = int(id_paciente_str)
+except:
+    st.error("ID do paciente inválido.")
     st.stop()
 
-if not id_paciente_str:
-    st.error("❌ ID do paciente não encontrado na URL.")
+# Dados do paciente
+paciente_df = df[df["ID"].astype(str) == id_paciente_str]
+if paciente_df.empty:
+    st.error("Paciente não encontrado.")
     st.stop()
 
-# ------------------ INPUTS DE EVOLUÇÃO ------------------
+paciente_info = paciente_df.iloc[0]
 
+# --- Inputs para evolução ---
 st.markdown("<h4 style='text-align:center;'>📈 Inserir Evolução do Tratamento</h4>", unsafe_allow_html=True)
 espaco, col1, col2, espaco2 = st.columns([1, 3, 3, 1])
-
 with col1:
     data_evolucao = st.date_input("📅 Data da Evolução", format="DD/MM/YYYY")
 with col2:
     descricao_evolucao = st.text_area("📝 Descrição da Evolução", height=100)
 
-# ------------------ BOTÃO DE SALVAR ------------------
-
-salvar = st.button("💾 Salvar Evolução")
-if salvar:
+if st.button("💾 Salvar Evolução"):
     if descricao_evolucao.strip() == "":
         st.warning("⚠️ A descrição da evolução não pode estar vazia.")
     else:
         try:
-            # Autenticando com o Google
-            scopes = [
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive"
-            ]
-            service_account_info = {
-                "type": st.secrets["gcp_service_account"]["type"],
-                "project_id": st.secrets["gcp_service_account"]["project_id"],
-                "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
-                "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
-                "client_email": st.secrets["gcp_service_account"]["client_email"],
-                "client_id": st.secrets["gcp_service_account"]["client_id"],
-                "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
-                "token_uri": st.secrets["gcp_service_account"]["token_uri"],
-                "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
-                "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
-            }
-
-            credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
-            gc = gspread.authorize(credentials)
-            sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
-
+            sh = gc.open_by_key(SPREADSHEET_ID)
             try:
-                worksheet = sh.worksheet("Registros")
+                aba = sh.worksheet("Registros")
             except gspread.exceptions.WorksheetNotFound:
-                worksheet = sh.add_worksheet(title="Registros", rows="1000", cols="10")
-                worksheet.append_row(["ID", "Data", "Descrição", "Usuário"])
+                aba = sh.add_worksheet(title="Registros", rows="1000", cols="10")
+                aba.append_row(["ID", "Data", "Descrição", "Usuário"])
 
             nova_linha = [
                 id_paciente_str,
@@ -95,19 +82,28 @@ if salvar:
                 descricao_evolucao.strip(),
                 "usuario_a_definir"
             ]
-            worksheet.append_row(nova_linha)
+            aba.append_row(nova_linha)
             st.success("✅ Evolução registrada com sucesso!")
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
 
-# ------------------ DADOS DO PACIENTE ------------------
-
-# (Você deve já ter carregado o dicionário `paciente_info` antes desse trecho)
-
+# --- Título e dados pessoais ---
 st.markdown("<h2 style='text-align:center;'>📋 Dados E Registros do Paciente</h2><hr>", unsafe_allow_html=True)
+status = paciente_info.get('STATUS', '').strip().lower()
+if status == 'ativo':
+    status_emoji = "✅"
+    status_color = "#28a745"
+elif status == 'inativo':
+    status_emoji = "⛔"
+    status_color = "#6c757d"
+elif status == 'ausente':
+    status_emoji = "🕓"
+    status_color = "#ffc107"
+else:
+    status_emoji = "❔"
+    status_color = "#000"
 
 espaco, col1, col2, col3, col4, espaco2 = st.columns([1, 2, 2, 2, 2, 1])
-
 with col1:
     st.markdown(f"<h5 style='text-align:center;'>👤<br>{paciente_info['NOME']}</h5>", unsafe_allow_html=True)
 with col2:
@@ -115,23 +111,27 @@ with col2:
 with col3:
     st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h5>", unsafe_allow_html=True)
 with col4:
-    status = paciente_info['STATUS'].strip().lower()
-    if status == "ativo":
-        cor = "green"
-        icone = "✅"
-    elif status == "inativo":
-        cor = "gray"
-        icone = "⛔"
-    elif status == "ausente":
-        cor = "orange"
-        icone = "🟠"
-    else:
-        cor = "black"
-        icone = "❓"
-
-    st.markdown(
-        f"<h5 style='text-align:center; color:{cor};'>{icone}<br>Status: {paciente_info['STATUS']}</h5>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<h5 style='text-align:center; color:{status_color};'>{status_emoji}<br>Status: {paciente_info['STATUS']}</h5>", unsafe_allow_html=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
+
+# --- Dados clínicos ---
+col1, col2, col3, col4, col5 = st.columns(5)
+with col1:
+    st.markdown(f"<h6 style='text-align:center;'>🧬 Tipo de Fissura</h6><p style='text-align:center;'>{paciente_info.get('TIPO_FISSURA', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>📋 Plano de Tratamento</h6><p style='text-align:center;'>{paciente_info.get('PLANO_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
+
+with col2:
+    st.markdown(f"<h6 style='text-align:center;'>📝 Diagnóstico</h6><p style='text-align:center;'>{paciente_info.get('DIAGNOSTICO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>🧩 Características Oclusais</h6><p style='text-align:center;'>{paciente_info.get('CARAC_OCLUSAIS', '')}</p>", unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"<h6 style='text-align:center;'>🪥 Necessidades Odontológicas</h6><p style='text-align:center;'>{paciente_info.get('NECES_ODONTO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>📜 Histórico do Tratamento</h6><p style='text-align:center;'>{paciente_info.get('HISTORIA_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
+
+with col4:
+    st.markdown(f"<h6 style='text-align:center;'>🦷 Necessidades Ortodônticas</h6><p style='text-align:center;'>{paciente_info.get('NECES_ORTO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align:center;'>📌 Outros</h6><p style='text-align:center;'>{paciente_info.get('OUTROS', '')}</p>", unsafe_allow_html=True)
+
+with col5:
+    st.markdown(f"<h6 style='text-align:center;'>🔪 Necessidades Cirúrgicas</h6><p style='text-align:center;'>{paciente_info.get('NECES_CIRUR', '')}</p>", unsafe_allow_html=True)
