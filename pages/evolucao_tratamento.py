@@ -91,6 +91,20 @@ status_opcoes = ["Ativo", "Inativo", "Ausente"]
 st.write("______________________________")
 st.markdown("<h2 style='text-align:center;'>📋 Dados E Registros do Paciente</h2><hr>", unsafe_allow_html=True)
 
+status = paciente_info.get('STATUS', '').strip().lower()
+
+if status == 'ativo':
+    status_emoji = "✅"
+    status_color = "#28a745"  # verde
+elif status == 'inativo':
+    status_emoji = "⛔"
+    status_color = "#dc3545"  # vermelho
+elif status == 'ausente':
+    status_emoji = "🕓"
+    status_color = "#ffc107"  # amarelo
+else:
+    status_emoji = "❔"
+    status_color = "#6c757d"  # cinza
 espaco, col1, col2, col3, col4, espaco2 = st.columns([1, 2, 2, 2, 2, 1])
 
 with col1:
@@ -100,7 +114,7 @@ with col2:
 with col3:
     st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info['IDADE']} anos</h5>", unsafe_allow_html=True)
 with col4:
-    st.markdown(f"<h5 style='text-align:center;'>✅<br>Status: {paciente_info['STATUS']}</h5>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center; color:{status_color};'>{status_emoji}<br>Status: {paciente_info['STATUS']}</h5>", unsafe_allow_html=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
