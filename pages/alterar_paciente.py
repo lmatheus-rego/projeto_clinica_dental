@@ -1,61 +1,88 @@
 import streamlit as st
-import controllers.PacienteController as PacienteController
+import gspread
 from datetime import datetime
 import models.Paciente as Paciente
 
 st.set_page_config(page_title="Alterar Paciente", page_icon="📝")
 st.title("📝 Alterar Cadastro do Paciente")
 
-# Obtém ID do paciente da URL
-id_paciente = st.query_params.get("idpaciente", "")
-if isinstance(id_paciente, list):
-    id_paciente = id_paciente[0]
-id_paciente = id_paciente.strip()
+# Obter o ID do paciente via query params
+id_paciente_str = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente_str, list):
+    id_paciente_str = id_paciente_str[0]
+id_paciente_str = id_paciente_str.strip()
+try:
+    id_paciente = int(id_paciente_str)
+except ValueError:
+    st.error("ID do paciente inválido.")
+    st.stop()
 
-# Carrega dados do paciente
-paciente = PacienteController.Buscar_Paciente(id_paciente)
-if not paciente:
+# Conectar à planilha via gspread
+gc = gspread.service_account_from_dict(st.secrets["gsheets_connection"])
+sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
+worksheet = sh.worksheet("Pacientes")
+dados = worksheet.get_all_records()
+
+# Buscar paciente na planilha
+paciente_encontrado = None
+for row in dados:
+    if str(row["id"]) == str(id_paciente):
+        paciente_encontrado = row
+        break
+
+if not paciente_encontrado:
     st.error("Paciente não encontrado.")
     st.stop()
 
-p = paciente[0]  # objeto retornado da lista
 sexo_opcoes = ["Masculino", "Feminino"]
 
+# Formulário para edição
 with st.form(key="form_alterar_paciente"):
     st.subheader("🧾 Dados Pessoais")
     col1, col2 = st.columns(2)
     with col1:
-        nome = st.text_input("Nome", value=p.nome)
-        fao = st.text_input("FAO", value=p.fao)
-        idade = st.number_input("Idade", min_value=0, max_value=130, step=1, value=int(p.idade))
-        data_nasc = st.date_input("Data de Nascimento", value=datetime.strptime(p.data, "%Y-%m-%d"))
-        sexo = st.selectbox("Sexo", options=sexo_opcoes, index=sexo_opcoes.index(p.sexo))
+        nome = st.text_input("Nome", value=paciente_encontrado["nome"])
+        fao = st.text_input("FAO", value=paciente_encontrado["fao"])
+        idade = st.number_input("Idade", min_value=0, max_value=130, step=1, value=int(paciente_encontrado["idade"]))
+        data_nasc = st.date_input("Data de Nascimento", value=datetime.strptime(paciente_encontrado["data"], "%Y-%m-%d"))
+        sexo = st.selectbox("Sexo", options=sexo_opcoes, index=sexo_opcoes.index(paciente_encontrado["sexo"]))
 
     with col2:
-        filiacao = st.text_input("Filiação", value=p.filiacao)
-        endereco = st.text_input("Endereço", value=p.endereco)
-        telefone = st.text_input("Telefone", value=p.telefone, placeholder="(92) 00000-0000")
-        tipo_fissura = st.text_input("Tipo de Fissura", value=p.tipo_fissura)
-        historia_tratamento = st.text_area("História do Tratamento", value=p.historia_tratamento)
+        filiacao = st.text_input("Filiação", value=paciente_encontrado["filiacao"])
+        endereco = st.text_input("Endereço", value=paciente_encontrado["endereco"])
+        telefone = st.text_input("Telefone", value=paciente_encontrado["telefone"], placeholder="(92) 00000-0000")
+        tipo_fissura = st.text_input("Tipo de Fissura", value=paciente_encontrado["tipo_fissura"])
+        historia_tratamento = st.text_area("História do Tratamento", value=paciente_encontrado["historia_tratamento"])
 
     st.markdown("---")
     submitted = st.form_submit_button("💾 Confirmar Alteração")
 
+# Salvar alterações na planilha
 if submitted:
-    paciente_atualizado = Paciente.Paciente(
-        id=id_paciente,
-        nome=nome,
-        fao=fao,
-        idade=int(idade),
-        data=data_nasc.strftime("%Y-%m-%d"),
-        sexo=sexo,
-        filiacao=filiacao,
-        endereco=endereco,
-        telefone=telefone,
-        tipo_fissura=tipo_fissura,
-        historia_tratamento=historia_tratamento
-    )
+    nova_linha = [
+        id_paciente,
+        nome,
+        fao,
+        idade,
+        data_nasc.strftime("%Y-%m-%d"),
+        sexo,
+        filiacao,
+        endereco,
+        telefone,
+        tipo_fissura,
+        historia_tratamento
+    ]
 
-    PacienteController.Alterar(paciente_atualizado)
-    st.success("✅ Dados do paciente atualizados com sucesso!")
-    st.experimental_rerun()
+    # Encontrar índice da linha na planilha (considerando cabeçalho na linha 1)
+    index_linha = None
+    for i, row in enumerate(dados):
+        if str(row["id"]) == str(id_paciente):
+            index_linha = i + 2  # +2 pois gspread é 1-based e linha 1 é cabeçalho
+            break
+
+    if index_linha:
+        worksheet.update(f"A{index_linha}:K{index_linha}", [nova_linha])
+        st.success("✅ Dados do paciente atualizados com sucesso!")
+        st.experimental_rerun()
+    else:
+        st.error("Erro ao localizar a linha do paciente na planilha.")
