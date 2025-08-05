@@ -5,7 +5,21 @@ import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
+from streamlit.source_util import (
+    page_icon_and_name,
+    calc_md5,
+    get_pages,
+    _on_pages_changed
+)
 
+
+def delete_page(main_script_path_str, page_name):
+    current_pages = get_pages(main_script_path_str)
+    for key, value in current_pages.items():
+        if value['page_name'] == page_name:
+            del current_pages[key]
+            break
+    _on_pages_changed.send()
 # --- Autenticação e carregamento da planilha ---
 def carregar_dados():
     scopes = [
@@ -24,6 +38,13 @@ def carregar_dados():
         "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
         "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
     }
+
+    if st.button("🔙 Voltar para lista de pacientes"):
+        st.query_params.clear()  # Remove parâmetros da URL
+        delete_page("1_🏠_home", "alterar_paciente")
+        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+
+
 
     credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
     gc = gspread.authorize(credentials)
