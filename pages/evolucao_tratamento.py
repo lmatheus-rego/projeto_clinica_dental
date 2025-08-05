@@ -86,7 +86,7 @@ if paciente_df.empty:
 
 paciente_info = paciente_df.iloc[0]
 sexo_opcoes = ["Masculino", "Feminino"]
-
+status_opcoes = ["Ativo", "Inativo", "Ausente"]
 # Exibição
 st.write("______________________________")
 st.markdown("<h2 style='text-align:center;'>📋 Dados E Registros do Paciente</h2><hr>", unsafe_allow_html=True)
@@ -106,7 +106,35 @@ st.write("**Registros de Tratamento:**")
 
 st.write("**Inserir/Alterar Diagnósticos**")
 
-with st.form(key="diagnostico_paciente"):
+st.write("______________________________")
+st.markdown("<h4 style='text-align:center;'>📌 Diagnósticos e Planejamento</h4><hr>", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown(f"<h5 style='text-align:center;'>🧬 Tipo de Fissura</h5><p style='text-align:center;'>{paciente_info.get('TIPO_FISSURA', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>🪥 Necessidades Odontológicas</h5><p style='text-align:center;'>{paciente_info.get('NECES_ODONTO', '')}</p>", unsafe_allow_html=True)
+
+with col2:
+    st.markdown(f"<h5 style='text-align:center;'>📝 Diagnóstico</h5><p style='text-align:center;'>{paciente_info.get('DIAGNOSTICO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>🦷 Necessidades Ortodônticas</h5><p style='text-align:center;'>{paciente_info.get('NECES_ORTO', '')}</p>", unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"<h5 style='text-align:center;'>📋 Plano de Tratamento</h5><p style='text-align:center;'>{paciente_info.get('PLANO_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h5 style='text-align:center;'>🔪 Necessidades Cirúrgicas</h5><p style='text-align:center;'>{paciente_info.get('NECES_CIRUR', '')}</p>", unsafe_allow_html=True)
+
+# Nova linha para completar os campos restantes
+col4, col5, col6 = st.columns(3)
+with col4:
+    st.markdown(f"<h5 style='text-align:center;'>📜 Histórico do Tratamento</h5><p style='text-align:center;'>{paciente_info.get('HISTORIA_TRATAMENTO', '')}</p>", unsafe_allow_html=True)
+
+with col5:
+    st.markdown(f"<h5 style='text-align:center;'>🧩 Características Oclusais</h5><p style='text-align:center;'>{paciente_info.get('CARAC_OCLUSAIS', '')}</p>", unsafe_allow_html=True)
+
+with col6:
+    st.markdown(f"<h5 style='text-align:center;'>📌 Outros</h5><p style='text-align:center;'>{paciente_info.get('OUTROS', '')}</p>", unsafe_allow_html=True)
+
+#with st.form(key="diagnostico_paciente"):
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         input_tipo_fissura = st.text_area("**Tipo de Fissura:**", value=paciente_info.get("TIPO_FISSURA", ""))
@@ -126,7 +154,7 @@ with st.form(key="diagnostico_paciente"):
 
     submit = st.form_submit_button("Confirmar")
 
-if submit:
+#if submit:
     # Atualiza os dados do paciente no dataframe
     idx = paciente_df.index[0]
     df.at[idx, "TIPO_FISSURA"] = input_tipo_fissura
