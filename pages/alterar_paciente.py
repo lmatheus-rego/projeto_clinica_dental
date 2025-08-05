@@ -1,95 +1,98 @@
 import streamlit as st
-import gspread
 from datetime import datetime
-import models.Paciente as Paciente
-from datetime import date
-st.set_page_config(page_title="Alterar Paciente", page_icon="📝")
-st.title("📝 Alterar Cadastro do Paciente")
+import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+import io
 
-def calcular_idade(data_nascimento: date) -> int:
-    hoje = date.today()
-    idade = hoje.year - data_nascimento.year - (
-        (hoje.month, hoje.day) < (data_nascimento.month, data_nascimento.day)
-    )
-    return idade
+st.set_page_config(layout="centered")
+st.title("Atualizar Documentos e Diagnóstico")
 
-# Obter o ID do paciente via query params
-id_paciente_str = st.query_params.get("idpaciente", "")
-if isinstance(id_paciente_str, list):
-    id_paciente_str = id_paciente_str[0]
-id_paciente_str = id_paciente_str.strip()
-try:
-    id_paciente = int(id_paciente_str)
-except ValueError:
-    st.error("ID do paciente inválido.")
-    st.stop()
+# ID do paciente via URL
+id = st.query_params.get("idpaciente")
 
-# Conectar à planilha via gspread
-gc = gspread.service_account_from_dict(st.secrets["gcp_service_account"])
-sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
-worksheet = sh.worksheet("Pacientes")
-dados = worksheet.get_all_records()
+# Autenticação Google Sheets e Drive
+scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
+credentials = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"], scopes=scope
+)
+client = gspread.authorize(credentials)
+sheet = client.open_by_key(st.secrets["sheet_id"]).sheet1
+dados = pd.DataFrame(sheet.get_all_records())
 
-# Buscar paciente na planilha
-paciente_encontrado = None
-for row in dados:
-    if str(row["ID"]) == str(id_paciente):
-        paciente_encontrado = row
-        break
+# Conexão com Google Drive
+drive_service = build("drive", "v3", credentials=credentials)
 
-if not paciente_encontrado:
+# Pasta destino no Google Drive
+PASTA_DRIVE_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
+
+# Buscar paciente
+paciente = dados[dados["ID"] == id]
+if paciente.empty:
     st.error("Paciente não encontrado.")
     st.stop()
 
+paciente_info = paciente.iloc[0]
 sexo_opcoes = ["Masculino", "Feminino"]
 
-# Formulário para edição
-with st.form(key="form_alterar_paciente"):
-    st.subheader("🧾 Dados Pessoais")
+# Exibição
+st.write("______________________________")
+st.write(f"**Paciente:** {paciente_info['NOME']}")
+st.write(f"**FAO:** {paciente_info['FAO']}")
+st.write(f"**Tipo de Fissura:** {paciente_info['TIPO_FISSURA']}")
+st.write("**História do Tratamento:**")
+st.write(f"{paciente_info.get('HISTORIA', '')}")
+st.write("______________________________")
+st.write("**Inserir Exames e Diagnósticos**")
+
+with st.form(key="diagnostico_paciente"):
     col1, col2 = st.columns(2)
     with col1:
-        nome = st.text_input("NOME", value=paciente_encontrado["NOME"])
-        fao = st.text_input("FAO", value=paciente_encontrado["FAO"])
-        data_nasc = st.date_input("DATA", value=datetime.strptime(paciente_encontrado["DATA"], "%d/%m/%Y"))
-        sexo = st.selectbox("SEXO", options=sexo_opcoes, index=sexo_opcoes.index(paciente_encontrado["SEXO"]))
-
+        input_oclusais = st.text_area("**Características Oclusais:**", value=paciente_info.get("CARAC_OCLUSAIS", ""))
+        input_odonto = st.text_area("**Necessidades Odontológicas:**", value=paciente_info.get("NECES_ODONTO", ""))
+        input_outros = st.text_area("**Outros:**", value=paciente_info.get("OUTROS", ""))
+        input_plano = st.text_area("**Plano de Tratamento:**", value=paciente_info.get("PLANO_TRATAMENTO", ""))
     with col2:
-        filiacao = st.text_input("Filiação", value=paciente_encontrado["FILIACAO"])
-        endereco = st.text_input("Endereço", value=paciente_encontrado["ENDERECO"])
-        telefone = st.text_input("Telefone", value=paciente_encontrado["TELEFONE"], placeholder="(92) 00000-0000")
-        tipo_fissura = st.text_input("Tipo de Fissura", value=paciente_encontrado["TIPO_FISSURA"])
-        historia_tratamento = st.text_area("História do Tratamento", value=paciente_encontrado["HISTORIA_TRATAMENTO"])
+        input_orto = st.text_area("**Necessidades Ortodônticas:**", value=paciente_info.get("NECES_ORTO", ""))
+        input_cirur = st.text_area("**Necessidades Cirúrgicas:**", value=paciente_info.get("NECES_CIRUR", ""))
+        input_diagnostico = st.text_area("**Diagnóstico:**", value=paciente_info.get("DIAGNOSTICO", ""))
+        input_docs = st.file_uploader("**Inserir Exames:**", type=["pdf"], accept_multiple_files=True)
 
-    st.markdown("---")
-    submitted = st.form_submit_button("💾 Confirmar Alteração")
+    submit = st.form_submit_button("Confirmar")
 
-# Salvar alterações na planilha
-if submitted:
-    idade = calcular_idade(data_nasc)
-    nova_linha = [
-        id_paciente,
-        nome,
-        idade,
-        data_nasc.strftime("%d/%m/%Y"),
-        sexo,
-        filiacao,
-        endereco,
-        telefone,
-        fao,
-        tipo_fissura,
-        historia_tratamento
-    ]
+if submit:
+    # Atualizar planilha
+    idx = paciente.index[0]
+    dados.at[idx, "CARAC_OCLUSAIS"] = input_oclusais
+    dados.at[idx, "NECES_ODONTO"] = input_odonto
+    dados.at[idx, "OUTROS"] = input_outros
+    dados.at[idx, "PLANO_TRATAMENTO"] = input_plano
+    dados.at[idx, "NECES_ORTO"] = input_orto
+    dados.at[idx, "NECES_CIRUR"] = input_cirur
+    dados.at[idx, "DIAGNOSTICO"] = input_diagnostico
+    sheet.update([dados.columns.values.tolist()] + dados.values.tolist())
 
-    # Encontrar índice da linha na planilha (considerando cabeçalho na linha 1)
-    index_linha = None
-    for i, row in enumerate(dados):
-        if str(row["ID"]) == str(id_paciente):
-            index_linha = i + 2  # +2 pois gspread é 1-based e linha 1 é cabeçalho
-            break
+    # Upload para o Google Drive
+    if input_docs:
+        for arquivo in input_docs:
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            nome_arquivo = f"P{id}#{timestamp}_{arquivo.name}"
 
-    if index_linha:
-        worksheet.update(f"A{index_linha}:K{index_linha}", [nova_linha])
-        st.success("✅ Dados do paciente atualizados com sucesso!")
-        st.rerun()
-    else:
-        st.error("Erro ao localizar a linha do paciente na planilha.")
+            media = MediaIoBaseUpload(arquivo, mimetype="application/pdf")
+            file_metadata = {
+                "name": nome_arquivo,
+                "parents": [PASTA_DRIVE_ID]
+            }
+
+            drive_service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields="id"
+            ).execute()
+
+    st.success("Paciente atualizado com sucesso!")
