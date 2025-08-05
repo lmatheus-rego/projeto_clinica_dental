@@ -70,13 +70,13 @@ if submitted:
     nova_linha = [
         id_paciente,
         nome,
-        fao,
         idade,
         data_nasc.strftime("%d/%m/%Y"),
         sexo,
         filiacao,
         endereco,
         telefone,
+        fao,
         tipo_fissura,
         historia_tratamento
     ]
