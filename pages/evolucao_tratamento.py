@@ -118,7 +118,7 @@ try:
                 texto = f"""
                 <div style='padding: 6px 12px; background-color:#f8f9fa; margin-bottom:6px; border-left: 4px solid #0d6efd; border-radius: 4px;'>
                     <p style='font-size: 0.85rem; margin: 0;'>
-                        <b>#{num}</b> - No dia <b>{data}</b> foi registrada a seguinte evolução:<br>
+                        <b>📄</b> - No dia <b>{data}</b> foi registrada a seguinte evolução:<br>
                         <i>"{descricao}"</i><br>
                         <span style='color:gray;'>Registrado por: <b>{usuario}</b></span>
                     </p>
