@@ -39,11 +39,13 @@ def gerar_proximo_id(sheet):
     ids = [int(row[0]) for row in dados[1:] if row[0].isdigit()]
     return max(ids) + 1 if ids else 1
 
-# Exibir mensagem de sucesso se existir
-if "sucesso" in st.session_state and st.session_state.sucesso:
+# Mensagem de sucesso persistente
+if "sucesso" not in st.session_state:
+    st.session_state.sucesso = False
+
+if st.session_state.sucesso:
     st.success("✅ Paciente cadastrado com sucesso!")
-    st.session_state.sucesso = False  # reseta para não mostrar sempre
-    st.experimental_rerun()
+    st.session_state.sucesso = False  # reseta depois de exibir
 
 # Formulário
 col1, col2 = st.columns(2)
