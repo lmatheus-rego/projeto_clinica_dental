@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
+import datetime
 from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
 from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
-from datetime import date
+from urllib.parse import urlencode
 
 st.set_page_config(layout="wide", page_title="Lista de Pacientes")
 
-# ==========================
-# Função para adicionar páginas dinamicamente
-# ==========================
 def add_page(main_script_path_str, page_name):
     pages = get_pages(main_script_path_str)
     main_script_path = Path(main_script_path_str)
@@ -29,49 +27,27 @@ def add_page(main_script_path_str, page_name):
     _on_pages_changed.send()
 
 # ==========================
-# Função para carregar dados da planilha
+# Carregar dados da planilha
 # ==========================
-def conectar_planilha():
+def carregar_aba(nome_aba):
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-
-    service_account_info = {
-        "type": st.secrets["gcp_service_account"]["type"],
-        "project_id": st.secrets["gcp_service_account"]["project_id"],
-        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
-        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
-        "client_email": st.secrets["gcp_service_account"]["client_email"],
-        "client_id": st.secrets["gcp_service_account"]["client_id"],
-        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
-        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
-        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
-        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
-    }
-
-    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+    credentials = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scopes
+    )
     gc = gspread.authorize(credentials)
-    return gc
 
-def carregar_dados():
-    gc = conectar_planilha()
     SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+    sheet = gc.open_by_key(SPREADSHEET_ID).worksheet(nome_aba)
 
-    # Pacientes
-    sheet_pacientes = gc.open_by_key(SPREADSHEET_ID).worksheet("Pacientes")
-    dados_pacientes = sheet_pacientes.get_all_records()
-    df_pacientes = pd.DataFrame(dados_pacientes)
-
-    # Fila
-    sheet_fila = gc.open_by_key(SPREADSHEET_ID).worksheet("Fila")
-    dados_fila = sheet_fila.get_all_records()
-    df_fila = pd.DataFrame(dados_fila)
-
-    return df_pacientes, df_fila, gc
+    dados = sheet.get_all_records()
+    return pd.DataFrame(dados)
 
 # ==========================
-# CSS para cards
+# Estilo dos cards
 # ==========================
 st.markdown("""
 <style>
@@ -79,178 +55,165 @@ st.markdown("""
     border-radius: 6px;
     border-width: thin;
     border-style: outset;
-    padding: 0.8rem 1rem;
-    margin-bottom: 1rem;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
     transition: all 0.3s ease;
 }
 .card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-button.stButton>button {
-    font-size: 13px;
-    padding: 0.25rem 0.5rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.1);
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================
-# Carregar dados
+# Carregar pacientes e fila
 # ==========================
-df_pacientes, df_fila, gc = carregar_dados()
-df_pacientes.columns = df_pacientes.columns.str.strip().str.title()
+df = carregar_aba("Pacientes")
+df_fila = carregar_aba("Fila")
+
+df.columns = df.columns.str.strip().str.upper()
 df_fila.columns = df_fila.columns.str.strip().str.upper()
 
 # ==========================
-# Sidebar - Fila de Atendimento
-# ==========================
-st.sidebar.markdown("### 📅 Fila de Atendimento - Hoje")
-hoje = date.today()
-df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
-fila_hoje = df_fila[df_fila["DATA"] == hoje]
-
-if not fila_hoje.empty:
-    st.sidebar.markdown(
-        "<div style='display:flex; font-weight:bold; padding:4px 6px; font-size:13px'>"
-        "<div style='flex:2'>NOME</div>"
-        "<div style='flex:1; text-align:center'>STATUS</div>"
-        "<div style='flex:1; text-align:center'>FICHA</div>"
-        "<div style='flex:1; text-align:center'>EVOLUÇÃO</div>"
-        "</div>",
-        unsafe_allow_html=True
-    )
-
-    for _, row in fila_hoje.iterrows():
-        paciente_id = str(row["PACIENTE_ID"]).strip()
-        paciente = df_pacientes[df_pacientes["Id"].astype(str).str.strip() == paciente_id]
-        if paciente.empty:
-            continue
-        nome_paciente = paciente.iloc[0]["Nome"]
-        status = row["STATUS"].upper()
-
-        if status == "AGENDADO":
-            cor_status = "#FFD700"  # amarelo
-        elif status == "ATENDIDO":
-            cor_status = "#4CAF50"  # verde
-        elif status == "CANCELADO":
-            cor_status = "#F44336"  # vermelho
-        else:
-            cor_status = "#000000"
-
-        c1, c2, c3, c4 = st.sidebar.columns([2, 1, 1, 1])
-        c1.markdown(f"<div style='font-size:13px'>{nome_paciente}</div>", unsafe_allow_html=True)
-        c2.markdown(f"<div style='text-align:center; color:{cor_status}; font-size:13px'>{status}</div>", unsafe_allow_html=True)
-
-        with c3:
-            if st.button("📄", key=f"ficha_{paciente_id}", help="Ficha Clínica"):
-                st.query_params = {"idpaciente": paciente_id}
-                add_page("1_🏠_home", "ficha_clinica")
-                st.switch_page("pages/ficha_clinica.py")
-        with c4:
-            if st.button("🦷", key=f"evolucao_{paciente_id}", help="Evolução Tratamento"):
-                st.query_params = {"idpaciente": paciente_id}
-                add_page("1_🏠_home", "evolucao_tratamento")
-                st.switch_page("pages/evolucao_tratamento.py")
-else:
-    st.sidebar.info("⚠️ Nenhum paciente na fila hoje.")
-
-# ==========================
-# Lista de Pacientes
+# Filtros de busca
 # ==========================
 st.markdown("## 📋 Lista de Pacientes")
 busca = st.text_input("🔎 Buscar por nome, idade, FAO, etc:", placeholder="Digite aqui...")
 if busca:
     busca_lower = busca.lower()
-    df_pacientes = df_pacientes[df_pacientes.apply(lambda row: row.astype(str).str.lower().str.contains(busca_lower).any(), axis=1)]
+    df = df[df.apply(lambda row: row.astype(str).str.lower().str.contains(busca_lower).any(), axis=1)]
 
 st.markdown("---")
 
 colunas = st.columns(4)
 
-def formatar_status(status):
-    if status.lower() == "ativo":
-        return f"<span style='color:green;'>🟢 {status}</span>"
-    elif status.lower() == "ausente":
-        return f"<span style='color:orange;'>🟡 {status}</span>"
-    elif status.lower() == "inativo":
-        return f"<span style='color:red;'>🔴 {status}</span>"
-    return status
+# ==========================
+# Funções auxiliares
+# ==========================
+def badge_status(status: str) -> str:
+    status = str(status).strip().upper()
+    if status == "AGENDADO":
+        cor_fundo, cor_texto = "#FFD700", "black"
+    elif status == "ATENDIDO":
+        cor_fundo, cor_texto = "#28a745", "white"
+    elif status == "CANCELADO":
+        cor_fundo, cor_texto = "#dc3545", "white"
+    elif status == "ATIVO":
+        cor_fundo, cor_texto = "#28a745", "white"
+    elif status == "AUSENTE":
+        cor_fundo, cor_texto = "#FFA500", "black"
+    elif status == "INATIVO":
+        cor_fundo, cor_texto = "#dc3545", "white"
+    else:
+        cor_fundo, cor_texto = "#6c757d", "white"
+
+    return f"""
+    <div style='background-color:{cor_fundo};
+                color:{cor_texto};
+                font-size:11px;
+                font-weight:600;
+                text-align:center;
+                border-radius:8px;
+                padding:2px 6px;
+                display:inline-block;
+                width:90%'>
+        {status}
+    </div>
+    """
 
 def formatar_genero(genero, nome):
-    if genero.lower() == "masculino":
+    if str(genero).strip().lower() == "masculino":
         return f"<span style='color:blue;'>♂️ {nome}</span>"
-    elif genero.lower() == "feminino":
+    elif str(genero).strip().lower() == "feminino":
         return f"<span style='color:deeppink;'>♀️ {nome}</span>"
     return nome
 
-for idx, row in df_pacientes.iterrows():
+# ==========================
+# Renderização dos cards
+# ==========================
+for idx, row in df.iterrows():
     col = colunas[idx % 4]
+
     with col:
         with st.container():
-            status_formatado = formatar_status(row.get("Status", "-"))
-            genero_formatado = formatar_genero(row.get("Sexo", "-"), row.get("Nome", "-"))
+            genero_formatado = formatar_genero(row.get("SEXO", "-"), row.get("NOME", "-"))
+            status_badge = badge_status(row.get("STATUS", "-"))
 
             st.markdown(f"""
             <div class="card">
-                <b>{genero_formatado}</b><br>
-                🎂 <b>Idade:</b> {row.get("Idade", "-")} anos<br>
-                🧭 <b>FAO:</b> {row.get("Fao", "-")}<br>
-                💉 <b>Tipo de Fissura:</b> {row.get("Tipo_Fissura", "-")}<br>
-                📌 <b>Status:</b> {status_formatado}
+                {genero_formatado}<br>
+                🎂 <b>Idade:</b> {row.get("IDADE", "-")} anos<br>
+                🧭 <b>FAO:</b> {row.get("FAO", "-")}<br>
+                💉 <b>Tipo de Fissura:</b> {row.get("TIPO DE FISSURA", "-")}<br>
+                📌 <b>Status:</b> {status_badge}
             </div>
             """, unsafe_allow_html=True)
 
             with st.form(key=f"form_{idx}"):
                 bcol1, bcol2 = st.columns(2)
                 bcol3, bcol4 = st.columns(2)
+                bcol5 = st.columns(1)[0]
 
                 with bcol1:
                     ver = st.form_submit_button("📄 Ficha Clínica", use_container_width=True)
                 with bcol2:
-                    editar = st.form_submit_button("✏️ Editar Dados", use_container_width=True)
+                    editar = st.form_submit_button("✏️ Editar Dados Pessoais", use_container_width=True)
                 with bcol3:
-                    exames = st.form_submit_button("🧾 Docs & Exames", use_container_width=True)
+                    exames = st.form_submit_button("🧾 Inserir Docs e Exames", use_container_width=True)
                 with bcol4:
-                    evoluir = st.form_submit_button("🦷 Evolução", use_container_width=True)
+                    evolucao = st.form_submit_button("🦷 Evoluir Tratamento", use_container_width=True)
+                with bcol5:
+                    agendar = st.form_submit_button("📅 Agendar Hoje", use_container_width=True)
 
-                # Terceira linha: botão único
-                agendar = st.form_submit_button("📅 Agendar Hoje", use_container_width=True)
-
-                id_str = str(row.get("Id", "")).strip()
-
+                # Ações
                 if ver:
-                    st.query_params = {"idpaciente": id_str}
+                    st.query_params = {"idpaciente": str(row.get("ID", "")).strip()}
                     add_page("1_🏠_home", "ficha_clinica")
                     st.switch_page("pages/ficha_clinica.py")
+
                 elif editar:
-                    st.query_params = {"idpaciente": id_str}
+                    st.query_params = {"idpaciente": str(row.get("ID", "")).strip()}
                     add_page("1_🏠_home", "alterar_paciente")
                     st.switch_page("pages/alterar_paciente.py")
+
                 elif exames:
-                    st.query_params = {"idpaciente": id_str}
+                    st.query_params = {"idpaciente": str(row.get("ID", "")).strip()}
                     add_page("1_🏠_home", "inserir_exames_e_diagnosticos")
                     st.switch_page("pages/inserir_exames_e_diagnosticos.py")
-                elif evoluir:
-                    st.query_params = {"idpaciente": id_str}
+
+                elif evolucao:
+                    st.query_params = {"idpaciente": str(row.get("ID", "")).strip()}
                     add_page("1_🏠_home", "evolucao_tratamento")
                     st.switch_page("pages/evolucao_tratamento.py")
+
                 elif agendar:
-                    sheet_fila = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
-                    registros_fila = sheet_fila.get_all_records()
-                    df_fila_existente = pd.DataFrame(registros_fila)
+                    paciente_id = str(row.get("ID", "")).strip()
+                    hoje = datetime.date.today()
 
-                    df_fila_existente["DATA"] = pd.to_datetime(df_fila_existente["DATA"], dayfirst=True, errors="coerce").dt.date
-                    ja_agendado = not df_fila_existente[
-                        (df_fila_existente["PACIENTE_ID"].astype(str) == id_str) &
-                        (df_fila_existente["DATA"] == date.today())
-                    ].empty
+                    # Verificar se já existe
+                    ja_existe = (
+                        (df_fila["PACIENTE_ID"].astype(str).str.strip() == paciente_id) &
+                        (df_fila["DATA"] == str(hoje))
+                    ).any()
 
-                    if ja_agendado:
-                        st.warning(f"⚠️ Paciente **{row.get('Nome')}** já está agendado para hoje.")
+                    if ja_existe:
+                        st.warning(f"⚠️ O paciente {row.get('NOME', '-')} já está agendado para hoje.")
                     else:
-                        nova_linha = [id_str, date.today().strftime("%d/%m/%Y"), "AGENDADO"]
-                        sheet_fila.append_row(nova_linha)
-                        st.success(f"✅ Paciente **{row.get('Nome')}** agendado para hoje.")
-                        st.experimental_rerun()
+                        scopes = [
+                            "https://www.googleapis.com/auth/spreadsheets",
+                            "https://www.googleapis.com/auth/drive"
+                        ]
+                        credentials = Credentials.from_service_account_info(
+                            st.secrets["gcp_service_account"],
+                            scopes=scopes
+                        )
+                        gc = gspread.authorize(credentials)
+                        SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+                        sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("Fila")
+
+                        sheet.append_row([paciente_id, str(hoje), "AGENDADO"])
+                        st.success(f"✅ Paciente {row.get('NOME', '-')} agendado para hoje!")
+                        st.rerun()
 
 st.markdown("---")
-st.caption(f"👥 Total de pacientes: **{len(df_pacientes)}**")
+st.caption(f"👥 Total de pacientes: **{len(df)}**")
