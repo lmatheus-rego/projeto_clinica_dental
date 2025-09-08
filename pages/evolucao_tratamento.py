@@ -1,14 +1,9 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, date
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-from streamlit.source_util import (
-    page_icon_and_name,
-    calc_md5,
-    get_pages,
-    _on_pages_changed
-)
+from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
 
 # --- Funções utilitárias ---
 def delete_page(main_script_path_str, page_name):
@@ -28,7 +23,6 @@ def carregar_dados():
         k: v.replace('\\n', '\n') if k == "private_key" else v
         for k, v in st.secrets["gcp_service_account"].items()
     }
-
     credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
     gc = gspread.authorize(credentials)
     SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
@@ -69,7 +63,7 @@ paciente_info = paciente_df.iloc[0]
 st.markdown("<h3 style='text-align:center;'>📈 Evolução do Tratamento</h3><hr>", unsafe_allow_html=True)
 
 descricao_evolucao = st.text_area("📝 **Descrição da Evolução**", height=100)
-data_evolucao = st.date_input("📅 **Data da Evolução**", format="DD/MM/YYYY")
+data_evolucao = st.date_input("📅 **Data da Evolução**", value=date.today(), format="DD/MM/YYYY")
 
 if st.button("💾 Salvar Evolução"):
     if descricao_evolucao.strip() == "":
@@ -77,11 +71,13 @@ if st.button("💾 Salvar Evolução"):
     else:
         try:
             sh = gc.open_by_key(SPREADSHEET_ID)
+
+            # --- Aba Registros ---
             try:
-                aba = sh.worksheet("Registros")
+                aba_reg = sh.worksheet("Registros")
             except gspread.exceptions.WorksheetNotFound:
-                aba = sh.add_worksheet(title="Registros", rows="1000", cols="10")
-                aba.append_row(["PACIENTE_ID", "DATA_REGISTRO", "EVOLUCAO", "USUARIO"])
+                aba_reg = sh.add_worksheet(title="Registros", rows="1000", cols="10")
+                aba_reg.append_row(["PACIENTE_ID", "DATA_REGISTRO", "EVOLUCAO", "USUARIO"])
 
             nova_linha = [
                 id_paciente_str,
@@ -89,9 +85,35 @@ if st.button("💾 Salvar Evolução"):
                 descricao_evolucao.strip(),
                 "usuario_a_definir"
             ]
-            aba.append_row(nova_linha)
+            aba_reg.append_row(nova_linha)
+
+            # --- Aba Fila: atualizar status se existir ---
+            try:
+                aba_fila = sh.worksheet("Fila")
+                registros_fila = aba_fila.get_all_records()
+                df_fila = pd.DataFrame(registros_fila)
+
+                if not df_fila.empty:
+                    df_fila["DATA"] = pd.to_datetime(
+                        df_fila["DATA"], dayfirst=True, errors="coerce"
+                    ).dt.date
+
+                    mask = (
+                        (df_fila["PACIENTE_ID"].astype(str).str.strip() == id_paciente_str) &
+                        (df_fila["DATA"] == data_evolucao)
+                    )
+
+                    if mask.any():
+                        idx = df_fila[mask].index[0]  # primeira ocorrência
+                        col_status = list(df_fila.columns).index("STATUS") + 1
+                        aba_fila.update_cell(idx + 2, col_status, "ATENDIDO")
+                        st.info("📌 Status do paciente atualizado para ATENDIDO na fila de hoje.")
+            except gspread.exceptions.WorksheetNotFound:
+                st.warning("⚠️ Aba 'Fila' não encontrada, nenhum status foi atualizado.")
+
             st.success("✅ Evolução registrada com sucesso!")
-            st.rerun()
+            st.switch_page("1_🏠_home.py")
+
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
 
@@ -103,7 +125,6 @@ try:
 
     if "PACIENTE_ID" in df_registros.columns:
         df_paciente = df_registros[df_registros["PACIENTE_ID"].astype(str) == id_paciente_str]
-
         df_paciente["DATA_REGISTRO"] = pd.to_datetime(df_paciente["DATA_REGISTRO"], format="%d/%m/%Y", errors="coerce")
         df_paciente = df_paciente.dropna(subset=["DATA_REGISTRO"])
         df_paciente = df_paciente.sort_values(by="DATA_REGISTRO", ascending=False).reset_index(drop=True)
@@ -134,11 +155,9 @@ except Exception as e:
 
 # --- Dados Pessoais ---
 st.markdown("<h3 style='text-align:center;'>📋 Dados do Paciente</h3><hr>", unsafe_allow_html=True)
-
 status = paciente_info.get('STATUS', '').strip().lower()
 status_emoji = {"ativo": "✅", "inativo": "⛔", "ausente": "🕓"}.get(status, "❔")
 status_color = {"ativo": "#28a745", "inativo": "#6c757d", "ausente": "#ffc107"}.get(status, "#000")
-
 espaco, col1, col2, col3, col4, espaco2 = st.columns([1, 2, 2, 2, 2, 1])
 with col1:
     st.markdown(f"<h5 style='text-align:center;'>👤<br>{paciente_info['NOME']}</h5>", unsafe_allow_html=True)
