@@ -144,7 +144,6 @@ if st.button("💾 Salvar Evolução"):
             # Redirecionar para Home
 
         except Exception as e:
-            st.error(f"Erro ao salvar evolução: {e}")
 
 # ----------------- Histórico de Evoluções -----------------
 try:
