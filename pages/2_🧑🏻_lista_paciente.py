@@ -219,7 +219,7 @@ for idx, row in df_pacientes.iterrows():
                 🎂 <b>Idade:</b> {row.get("Idade", "-")} anos<br>
                 🧭 <b>FAO:</b> {row.get("Fao", "-")}<br>
                 💉 <b>Tipo de Fissura:</b> {row.get("Tipo_Fissura", "-")}<br>
-                📌 <b>Fila Hoje:</b> {badge_fila}
+                📌 <b>Status:</b> {row.get("STATUS," "-")}
             </div>
             """, unsafe_allow_html=True)
 
