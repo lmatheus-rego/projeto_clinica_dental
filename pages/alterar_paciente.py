@@ -10,6 +10,8 @@ from streamlit.source_util import (
     _on_pages_changed
 )
 
+
+
 # Função para deletar páginas do menu lateral
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)

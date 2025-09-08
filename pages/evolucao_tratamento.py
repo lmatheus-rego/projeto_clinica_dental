@@ -4,25 +4,14 @@ import pandas as pd
 from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
-from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
+from streamlit.source_util import (
+    page_icon_and_name,
+    calc_md5,
+    get_pages,
+    _on_pages_changed
+)
 
 # ----------------- Funções -----------------
-def add_page(main_script_path_str, page_name):
-    pages = get_pages(main_script_path_str)
-    main_script_path = Path(main_script_path_str)
-    pages_dir = main_script_path.parent / "pages"
-    script_path = [f for f in list(pages_dir.glob("*.py")) + list(main_script_path.parent.glob("*.py"))
-                   if f.name.find(page_name) != -1][0]
-    script_path_str = str(script_path.resolve())
-    pi, pn = page_icon_and_name(script_path)
-    psh = calc_md5(script_path_str)
-    pages[psh] = {
-        "page_script_hash": psh,
-        "page_name": pn,
-        "icon": pi,
-        "script_path": script_path_str,
-    }
-    _on_pages_changed.send()
 
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
@@ -70,7 +59,7 @@ def carregar_paciente(id_paciente_str, sh):
 # ----------------- Botão Voltar -----------------
 if st.button("🔙 Voltar para lista de pacientes"):
     st.query_params.clear()
-    delete_page("1_🏠_home", "alterar_paciente")
+    delete_page("1_🏠_home", "evolucao_tratamento")
     st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
 # ----------------- Carregar Planilhas -----------------
@@ -141,10 +130,10 @@ if st.button("💾 Salvar Evolução"):
                         st.success(f"✅ Status da fila atualizado para ATENDIDO")
                         break
 
-            # --- Redirecionar para Home ---
+        
             st.query_params.clear()
             delete_page("1_🏠_home", "evolucao_tratamento")
-            st.switch_page("1_🏠_home")
+            st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
