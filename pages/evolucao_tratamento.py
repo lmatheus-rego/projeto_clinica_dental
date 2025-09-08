@@ -99,18 +99,24 @@ if st.button("💾 Salvar Evolução"):
                 aba_fila = sh.worksheet("Fila")
                 registros_fila = aba_fila.get_all_records()
                 if registros_fila:
-                    for idx, row in enumerate(registros_fila, start=2):  # start=2 -> linha na planilha
-                        paciente_id_fila = str(row["PACIENTE_ID"]).strip()
-                        data_fila = datetime.strptime(row["DATA"], "%d/%m/%Y").date() if row["DATA"] else None
-                        if paciente_id_fila == id_paciente_str and data_fila == data_evolucao:
-                            col_status = list(aba_fila.row_values(1)).index("STATUS") + 1
+                    colunas = [c.strip().upper() for c in aba_fila.row_values(1)]
+                    col_paciente = colunas.index("PACIENTE_ID") + 1
+                    col_data = colunas.index("DATA") + 1
+                    col_status = colunas.index("STATUS") + 1
+
+                    data_evol_str = data_evolucao.strftime("%d/%m/%Y")  # padronizar
+
+                    for idx, row in enumerate(registros_fila, start=2):
+                        paciente_id_fila = str(row.get("PACIENTE_ID", "")).strip()
+                        data_fila = str(row.get("DATA", "")).strip()
+                        if paciente_id_fila == id_paciente_str and data_fila == data_evol_str:
                             aba_fila.update_cell(idx, col_status, "ATENDIDO")
                             break
             except gspread.exceptions.WorksheetNotFound:
                 st.warning("⚠️ Aba 'Fila' não encontrada, status não atualizado.")
 
             st.success("✅ Evolução registrada com sucesso!")
-            
+
             # --- Redirecionar para página Home ---
             st.query_params.clear()
             delete_page("1_🏠_home", "evolucao_tratamento")
@@ -135,7 +141,6 @@ try:
         if not df_paciente.empty:
             st.markdown("<h4>📜 Histórico de Evoluções</h4><hr>", unsafe_allow_html=True)
             for i, row in df_paciente.iterrows():
-                num = len(df_paciente) - i
                 data = row["DATA_REGISTRO"].strftime("%d/%m/%Y")
                 descricao = row.get("EVOLUCAO", "").strip()
                 usuario = row.get("USUARIO", "").strip()
