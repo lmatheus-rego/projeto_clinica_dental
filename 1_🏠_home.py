@@ -61,7 +61,7 @@ def carregar_aba(nome_aba):
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 # ==============================
-# 📋 Fila de Atendimento - Hoje (estilizada)
+# 📋 Fila de Atendimento - Hoje (em cards com emojis clicáveis)
 # ==============================
 hoje = datetime.date.today()
 
@@ -102,7 +102,7 @@ if not fila_hoje.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
             status = row["STATUS"].capitalize()
 
-            # Card do paciente
+            # Container do paciente (nome + status)
             st.sidebar.markdown(
                 f"""
                 <div style="
@@ -118,14 +118,12 @@ if not fila_hoje.empty:
                 ">
                     <div style='flex:2'>{nome_paciente}</div>
                     <div style='flex:1; text-align:center'>{status}</div>
-                    <div style='flex:1; text-align:center'>📄</div>
-                    <div style='flex:1; text-align:center'>🦷</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            # Botões de ação reais do Streamlit (para redirecionamento)
+            # Botões de ação (emojis clicáveis)
             col_ficha, col_evolucao = st.sidebar.columns([1,1])
             with col_ficha:
                 if st.button("📄", key=f"ficha_{paciente_id}"):
