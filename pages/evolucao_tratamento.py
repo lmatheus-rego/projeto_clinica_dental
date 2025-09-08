@@ -141,13 +141,14 @@ if st.button("💾 Salvar Evolução"):
                         st.success(f"✅ Status da fila atualizado para ATENDIDO")
                         break
 
-            # Redirecionar para Home
+            # Redirecionar para Home (nome da página dentro de pages/)
             st.query_params.clear()
-            delete_page("1_🏠_home","evolucao_tratamento")
-            st.switch_page("pages/1_🏠_home.py")
+            delete_page("1_🏠_home", "evolucao_tratamento")
+            st.experimental_rerun()  # Força recarregar a página Home
 
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
+
 
 # ----------------- Histórico de Evoluções -----------------
 try:
