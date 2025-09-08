@@ -1,11 +1,28 @@
 import streamlit as st
 from datetime import datetime
 import pandas as pd
+from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
 from streamlit.source_util import get_pages, _on_pages_changed
 
 # ----------------- Funções -----------------
+def add_page(main_script_path_str, page_name):
+    pages = get_pages(main_script_path_str)
+    main_script_path = Path(main_script_path_str)
+    pages_dir = main_script_path.parent / "pages"
+    script_path = [f for f in list(pages_dir.glob("*.py")) + list(main_script_path.parent.glob("*.py"))
+                   if f.name.find(page_name) != -1][0]
+    script_path_str = str(script_path.resolve())
+    pi, pn = page_icon_and_name(script_path)
+    psh = calc_md5(script_path_str)
+    pages[psh] = {
+        "page_script_hash": psh,
+        "page_name": pn,
+        "icon": pi,
+        "script_path": script_path_str,
+    }
+    _on_pages_changed.send()
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
     for key, value in current_pages.items():
