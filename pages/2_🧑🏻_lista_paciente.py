@@ -201,9 +201,9 @@ for idx, row in df_display.iterrows():
                 with bcol4:
                     evoluir = st.form_submit_button("🦷 Evoluir Tratamento", use_container_width=True)
 
-                # Terceira linha: botão Agendar Hoje ocupando as duas colunas
-                bcol5, bcol6 = st.columns([1,1])
-                with bcol5:
+                # Terceira linha: botão Agendar Hoje centralizado
+                bcol_agendar = st.columns([1])[0]
+                with bcol_agendar:
                     agendar = st.form_submit_button("📅 Agendar Hoje", use_container_width=True)
 
                 id_str = str(row.get("Id", "")).strip()
