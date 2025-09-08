@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
-from streamlit.source_util import get_pages, _on_pages_changed
+from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
 
 # ----------------- Funções -----------------
 def add_page(main_script_path_str, page_name):
