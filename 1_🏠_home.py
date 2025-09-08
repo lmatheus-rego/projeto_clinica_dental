@@ -63,7 +63,6 @@ df_fila = carregar_aba("Fila")
 # ==============================
 # 📋 Fila de Atendimento - Hoje (estilizada)
 # ==============================
-st.sidebar.markdown("### 📅 Fila de Atendimento - Hoje")
 hoje = datetime.date.today()
 
 # Normalizar colunas
