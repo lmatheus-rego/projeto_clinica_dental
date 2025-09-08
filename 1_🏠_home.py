@@ -3,12 +3,11 @@ import datetime
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-from streamlit.source_util import (
-    get_pages,
-    _on_pages_changed
-)
+from streamlit.source_util import get_pages, _on_pages_changed
 
+# ==========================
 # Função para deletar páginas do menu lateral
+# ==========================
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
     for key, value in current_pages.items():
@@ -17,7 +16,9 @@ def delete_page(main_script_path_str, page_name):
             break
     _on_pages_changed.send()
 
+# ==========================
 # Configuração inicial da página
+# ==========================
 st.set_page_config(
     page_title="Home",
     page_icon="🏠",
@@ -25,13 +26,15 @@ st.set_page_config(
 st.sidebar.title("Fila de Atendimento")
 st.title("Projeto Céu da Boca")
 
-# Remoção de páginas temporárias
+# Remover páginas temporárias
 delete_page("1_🏠_home", "ficha_clinica")
 delete_page("1_🏠_home", "alterar_paciente")
 delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
 delete_page("1_🏠_home", "evolucao_tratamento")
 
+# ==========================
 # Função para carregar dados de planilha privada usando secrets
+# ==========================
 def carregar_aba(nome_aba):
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
@@ -49,7 +52,9 @@ def carregar_aba(nome_aba):
     dados = sheet.get_all_records()
     return pd.DataFrame(dados)
 
+# ==========================
 # Carregar pacientes e fila
+# ==========================
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 
@@ -65,20 +70,22 @@ hoje = datetime.date.today()
 df_fila["Status"] = df_fila["Status"].astype(str).str.strip().str.lower()
 df_fila["Data"] = pd.to_datetime(df_fila["Data"], dayfirst=True, errors="coerce").dt.date
 
-# Logs de controle
-st.sidebar.write("📋 **DEBUG - Valores únicos de Status**", df_fila["Status"].unique().tolist())
-st.sidebar.write("📋 **DEBUG - Datas convertidas (5 primeiras)**", df_fila["Data"].head())
-st.sidebar.write("📋 **DEBUG - Hoje**", hoje)
+# Logs de debug
+st.sidebar.write("DEBUG - Valores únicos de Status:", df_fila["Status"].unique().tolist())
+st.sidebar.write("DEBUG - Datas convertidas (5 primeiras):", df_fila["Data"].head())
+st.sidebar.write("DEBUG - Hoje:", hoje)
 
 # Filtrar pacientes agendados para hoje
 fila_hoje = df_fila[(df_fila["Data"] == hoje) & (df_fila["Status"] == "agendado")]
 
-st.sidebar.write("📋 **DEBUG - Fila de Hoje**", fila_hoje)
+st.sidebar.write("DEBUG - Fila de Hoje:", fila_hoje)
 
 # Mostrar pacientes agendados com emojis clicáveis
 if not fila_hoje.empty:
     for _, row in fila_hoje.iterrows():
         paciente_id = row["Paciente_ID"]
+
+        # Filtrar paciente no df_pacientes correto
         paciente = df_pacientes[df_pacientes["ID"] == paciente_id]
 
         if not paciente.empty:
