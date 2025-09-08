@@ -63,36 +63,23 @@ hoje = datetime.date.today()
 
 # Normalizar colunas
 df_fila["Status"] = df_fila["Status"].astype(str).str.strip().str.lower()
-df_fila["Data"] = pd.to_datetime(
-    df_fila["Data"], 
-    dayfirst=True, 
-    errors="coerce"
-).dt.date
+df_fila["Data"] = pd.to_datetime(df_fila["Data"], dayfirst=True, errors="coerce").dt.date
 
 # Logs de controle
-st.sidebar.write("📋 **DEBUG - Valores únicos de Status**")
-st.sidebar.write(df_fila["Status"].unique().tolist())
-
-st.sidebar.write("📋 **DEBUG - Datas convertidas (5 primeiras)**")
-st.sidebar.write(df_fila["Data"].head())
-
-st.sidebar.write("📋 **DEBUG - Hoje**")
-st.sidebar.write(hoje)
+st.sidebar.write("📋 **DEBUG - Valores únicos de Status**", df_fila["Status"].unique().tolist())
+st.sidebar.write("📋 **DEBUG - Datas convertidas (5 primeiras)**", df_fila["Data"].head())
+st.sidebar.write("📋 **DEBUG - Hoje**", hoje)
 
 # Filtrar pacientes agendados para hoje
-fila_hoje = df_fila[
-    (df_fila["Data"] == hoje) & 
-    (df_fila["Status"] == "agendado")
-]
+fila_hoje = df_fila[(df_fila["Data"] == hoje) & (df_fila["Status"] == "agendado")]
 
-st.sidebar.write("📋 **DEBUG - Fila de Hoje**")
-st.sidebar.write(fila_hoje)
+st.sidebar.write("📋 **DEBUG - Fila de Hoje**", fila_hoje)
 
-# Mostrar pacientes agendados
+# Mostrar pacientes agendados com emojis clicáveis
 if not fila_hoje.empty:
     for _, row in fila_hoje.iterrows():
         paciente_id = row["Paciente_ID"]
-        paciente = df[df["ID"] == paciente_id]
+        paciente = df_pacientes[df_pacientes["ID"] == paciente_id]
 
         if not paciente.empty:
             nome_paciente = paciente.iloc[0]["Nome"]
@@ -101,12 +88,11 @@ if not fila_hoje.empty:
 
             st.sidebar.markdown(
                 f"- {nome_paciente} "
-                f"[📄]({ficha_url}) [🦷]({evolucao_url})"
+                f"[📄]({ficha_url}) [🦷]({evolucao_url})",
+                unsafe_allow_html=True
             )
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'Agendado'.")
-
-
 
 # ===================== RESUMO GERAL =====================
 def pacientes_do_mes(df):
