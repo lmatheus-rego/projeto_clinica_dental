@@ -61,7 +61,7 @@ def carregar_dados(aba="Pacientes"):
     return df
 
 # ==========================
-# CSS para estilizar os cards
+# CSS para estilizar os cards e sidebar
 # ==========================
 st.markdown("""
 <style>
@@ -103,11 +103,12 @@ fila_hoje = df_fila[df_fila["Data"] == hoje]
 # Funções de formatação
 # ==========================
 def formatar_status(status):
-    if status.lower() == "ativo":
+    status = status.upper()
+    if status == "ATENDIDO":
         return f"<span style='color:green;'>🟢 {status}</span>"
-    elif status.lower() == "ausente":
+    elif status == "AGENDADO":
         return f"<span style='color:orange;'>🟡 {status}</span>"
-    elif status.lower() == "inativo":
+    elif status == "CANCELADO":
         return f"<span style='color:red;'>🔴 {status}</span>"
     return status
 
@@ -129,12 +130,26 @@ if not fila_hoje.empty:
 
         if not paciente.empty:
             nome = paciente.iloc[0]["Nome"]
-            status = "Agendado"
-            st.sidebar.markdown(f"""
-            <div class="card" style="padding:4px 8px; font-size:14px;">
-                <b>{nome}</b> | <span style='color:#4caf50;'>{status}</span>
-            </div>
-            """, unsafe_allow_html=True)
+            status = str(row.get("Status", "Agendado")).capitalize()
+            cor_status = "orange" if status.upper() == "AGENDADO" else "green" if status.upper() == "ATENDIDO" else "red"
+
+            # Card com botões
+            with st.sidebar.container():
+                cols = st.columns([2,1,1,1])
+                cols[0].markdown(f"**{nome}**", unsafe_allow_html=True)
+                cols[1].markdown(f"<span style='color:{cor_status}; font-weight:bold;'>{status}</span>", unsafe_allow_html=True)
+                
+                # Botão Ficha Clínica
+                if cols[2].button("📄", key=f"ficha_{paciente_id}"):
+                    st.query_params = {"idpaciente": paciente_id}
+                    add_page("1_🏠_home", "ficha_clinica")
+                    st.switch_page("pages/ficha_clinica.py")
+                
+                # Botão Evolução
+                if cols[3].button("🦷", key=f"evolucao_{paciente_id}"):
+                    st.query_params = {"idpaciente": paciente_id}
+                    add_page("1_🏠_home", "evolucao_tratamento")
+                    st.switch_page("pages/evolucao_tratamento.py")
 else:
     st.sidebar.info("⚠️ Nenhum paciente agendado para hoje.")
 
@@ -173,6 +188,7 @@ for idx, row in df_display.iterrows():
                 bcol1, bcol2 = st.columns(2)
                 bcol3, bcol4 = st.columns(2)
 
+                # Primeira linha de botões
                 with bcol1:
                     ver = st.form_submit_button("📄 Ficha Clínica", use_container_width=True)
                 with bcol2:
@@ -182,6 +198,7 @@ for idx, row in df_display.iterrows():
                 with bcol4:
                     evoluir = st.form_submit_button("🦷 Evoluir Tratamento", use_container_width=True)
 
+                # Segunda linha de botão: Agendar Hoje
                 bcol5, bcol6 = st.columns(2)
                 with bcol5, bcol6:
                     agendar = st.form_submit_button("📅 Agendar Hoje", use_container_width=True)
@@ -205,20 +222,8 @@ for idx, row in df_display.iterrows():
                     st.switch_page("pages/evolucao_tratamento.py")
                 elif agendar:
                     # Adiciona paciente na fila
-                    service_account_info = {
-                        "type": st.secrets["gcp_service_account"]["type"],
-                        "project_id": st.secrets["gcp_service_account"]["project_id"],
-                        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
-                        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
-                        "client_email": st.secrets["gcp_service_account"]["client_email"],
-                        "client_id": st.secrets["gcp_service_account"]["client_id"],
-                        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
-                        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
-                        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
-                        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
-                    }
                     scopes = ["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"]
-                    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+                    credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
                     gc = gspread.authorize(credentials)
                     sheet = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
                     sheet.append_row([id_str, hoje.strftime("%d/%m/%Y"), "AGENDADO"])
