@@ -1,6 +1,7 @@
 import streamlit as st
 import datetime
 import pandas as pd
+from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
 from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
@@ -8,17 +9,6 @@ from streamlit.source_util import (
     get_pages,
     _on_pages_changed
 )
-
-# ==========================
-# Função para deletar páginas temporárias
-# ==========================
-def delete_page(main_script_path_str, page_name):
-    current_pages = get_pages(main_script_path_str)
-    for key, value in current_pages.items():
-        if value['page_name'] == page_name:
-            del current_pages[key]
-            break
-    _on_pages_changed.send()
 
 def add_page(main_script_path_str, page_name):
     pages = get_pages(main_script_path_str)
@@ -36,6 +26,19 @@ def add_page(main_script_path_str, page_name):
         "script_path": script_path_str,
     }
     _on_pages_changed.send()
+
+# ==========================
+# Função para deletar páginas temporárias
+# ==========================
+def delete_page(main_script_path_str, page_name):
+    current_pages = get_pages(main_script_path_str)
+    for key, value in current_pages.items():
+        if value['page_name'] == page_name:
+            del current_pages[key]
+            break
+    _on_pages_changed.send()
+
+
 # ==========================
 # Configuração inicial
 # ==========================
