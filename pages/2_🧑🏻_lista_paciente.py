@@ -163,18 +163,13 @@ else:
     st.sidebar.info("⚠️ Nenhum paciente na fila hoje.")
 
 # ==========================
-# Funções auxiliares
+# Função auxiliar para badge de status do paciente
 # ==========================
-def badge_status_fila(paciente_id):
-    hoje = date.today()
-    registros = df_fila[
-        (df_fila["PACIENTE_ID"].astype(str).str.strip() == str(paciente_id)) &
-        (df_fila["DATA"] == hoje)
-    ]
-    if registros.empty:
-        return "<div class='badge' style='background-color:#6c757d; color:white'>SEM AGEND.</div>"
+def badge_status_paciente(status_valor: str) -> str:
+    if not status_valor:
+        return "<div class='badge' style='background-color:#6c757d; color:white'>-</div>"
 
-    status = registros.iloc[-1]["STATUS"].upper()
+    status = str(status_valor).strip().upper()
     if status == "AGENDADO":
         cor = "#FFD700"; txt = "black"
     elif status == "ATENDIDO":
@@ -211,7 +206,7 @@ for idx, row in df_pacientes.iterrows():
     with col:
         with st.container():
             genero_formatado = formatar_genero(row.get("Sexo", "-"), row.get("Nome", "-"))
-            badge_fila = badge_status_fila(row.get("Id", ""))
+            badge_status = badge_status_paciente(row.get("Status", ""))  # 🔹 agora pega da aba Pacientes
 
             st.markdown(f"""
             <div class="card">
@@ -219,7 +214,7 @@ for idx, row in df_pacientes.iterrows():
                 🎂 <b>Idade:</b> {row.get("Idade", "-")} anos<br>
                 🧭 <b>FAO:</b> {row.get("Fao", "-")}<br>
                 💉 <b>Tipo de Fissura:</b> {row.get("Tipo_Fissura", "-")}<br>
-                📌 <b>Status:</b> {row.get("STATUS," "-")}
+                📌 <b>Status:</b> {badge_status}
             </div>
             """, unsafe_allow_html=True)
 
