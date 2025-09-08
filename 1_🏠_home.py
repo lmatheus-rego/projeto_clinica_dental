@@ -38,7 +38,6 @@ def delete_page(main_script_path_str, page_name):
             break
     _on_pages_changed.send()
 
-
 # ==========================
 # Configuração inicial
 # ==========================
@@ -80,6 +79,7 @@ def carregar_aba(nome_aba):
 # ==========================
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
+
 # ==============================
 # 📋 Fila de Atendimento - Hoje (compacta e estilizada)
 # ==============================
@@ -93,14 +93,10 @@ df_fila["DATA"] = pd.to_datetime(
     errors="coerce"
 ).dt.date
 
-# Filtrar pacientes agendados para hoje
-fila_hoje = df_fila[
-    (df_fila["DATA"] == hoje) & 
-    (df_fila["STATUS"] == "AGENDADO")
-]
+# Filtrar pacientes do dia
+fila_hoje = df_fila[df_fila["DATA"] == hoje]
 
 if not fila_hoje.empty:
-    
     # Cabeçalho da tabela
     st.sidebar.markdown(
         "<div style='display:flex; font-weight:bold; padding:4px 8px; font-size:12px;'>"
@@ -122,27 +118,60 @@ if not fila_hoje.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
             status = row["STATUS"].capitalize()
 
+            # Badge de cor para status
+            if status.upper() == "AGENDADO":
+                cor_fundo = "#FFD700"   # amarelo
+                cor_texto = "black"
+            elif status.upper() == "ATENDIDO":
+                cor_fundo = "#28a745"   # verde
+                cor_texto = "white"
+            elif status.upper() == "CANCELADO":
+                cor_fundo = "#dc3545"   # vermelho
+                cor_texto = "white"
+            else:
+                cor_fundo = "#6c757d"   # cinza
+                cor_texto = "white"
+
             # Card horizontal estilizado
             with st.sidebar.container():
                 cols = st.columns([2,1,1,1])
                 
-                # Nome do paciente com fonte menor
-                cols[0].markdown(f"<span style='font-size:13px; font-weight:500'>{nome_paciente}</span>", unsafe_allow_html=True)
+                # Nome
+                cols[0].markdown(
+                    f"<span style='font-size:13px; font-weight:500'>{nome_paciente}</span>",
+                    unsafe_allow_html=True
+                )
                 
-                # Status com fonte menor e centralizado
-                cols[1].markdown(f"<span style='font-size:12px; text-align:center'>{status}</span>", unsafe_allow_html=True)
+                # Status como badge colorido
+                cols[1].markdown(
+                    f"""
+                    <div style='background-color:{cor_fundo};
+                                color:{cor_texto};
+                                font-size:11px;
+                                font-weight:600;
+                                text-align:center;
+                                border-radius:8px;
+                                padding:2px 6px;
+                                display:inline-block;
+                                width:90%'>
+                        {status}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
                 
-                # Botões de ação menores
+                # Botões de ação
                 if cols[2].button("📄", key=f"ficha_{paciente_id}", help="Ver ficha clínica"):
                     st.query_params = {"idpaciente": str(paciente_id)}
                     add_page("1_🏠_home", "ficha_clinica")
                     st.switch_page("pages/ficha_clinica.py")
+
                 if cols[3].button("🦷", key=f"evolucao_{paciente_id}", help="Incluir evolução do tratamento"):
                     st.query_params = {"idpaciente": str(paciente_id)}
                     add_page("1_🏠_home", "evolucao_tratamento")
                     st.switch_page("pages/evolucao_tratamento.py")
 else:
-    st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'AGENDADO'.")
+    st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje.")
 
 # ==========================
 # RESUMO GERAL
