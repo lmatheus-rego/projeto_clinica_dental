@@ -143,7 +143,7 @@ if st.button("💾 Salvar Evolução"):
 
             # Redirecionar para Home
             st.query_params.clear()
-            delete_page("1_🏠_home","evolucao_tratamento")
+            delete_page("1_🏠_home", "alterar_paciente")
             st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
         except Exception as e:
