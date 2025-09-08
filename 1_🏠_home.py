@@ -24,7 +24,7 @@ st.set_page_config(
     page_title="Home",
     page_icon="🏠",
 )
-st.sidebar.title("Menu")
+st.sidebar.title("Fila de Atendimento")
 st.title("Projeto Céu da Boca")
 
 # Remoção de páginas temporárias
