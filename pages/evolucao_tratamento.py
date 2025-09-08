@@ -28,17 +28,15 @@ def carregar_planilhas():
     except gspread.exceptions.WorksheetNotFound:
         aba_registros = sh.add_worksheet("Registros", rows="1000", cols="10")
         aba_registros.append_row(["PACIENTE_ID","DATA_REGISTRO","EVOLUCAO","USUARIO"])
-    df_registros = pd.DataFrame(aba_registros.get_all_records())
-
+    
     # Fila
     try:
         aba_fila = sh.worksheet("Fila")
     except gspread.exceptions.WorksheetNotFound:
         aba_fila = sh.add_worksheet("Fila", rows="1000", cols="10")
         aba_fila.append_row(["PACIENTE_ID","DATA","STATUS"])
-    df_fila = pd.DataFrame(aba_fila.get_all_records())
-
-    return sh, aba_registros, df_registros, aba_fila, df_fila
+    
+    return sh, aba_registros, aba_fila
 
 # --- Botão voltar ---
 if st.button("🔙 Voltar para lista de pacientes"):
@@ -47,7 +45,7 @@ if st.button("🔙 Voltar para lista de pacientes"):
     st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
 # --- Carregar planilhas ---
-sh, aba_registros, df_registros, aba_fila, df_fila = carregar_planilhas()
+sh, aba_registros, aba_fila = carregar_planilhas()
 
 # --- Captura do ID via URL ---
 id_paciente_str = st.query_params.get("idpaciente", [""])[0].strip()
@@ -75,29 +73,33 @@ if st.button("💾 Salvar Evolução"):
     else:
         try:
             # --- Inserir evolução ---
-            nova_linha = [id_paciente_str, data_evolucao.strftime("%d/%m/%Y"), descricao_evolucao.strip(), "usuario_a_definir"]
-            aba_registros.append_row(nova_linha)
+            aba_registros.append_row([
+                id_paciente_str,
+                data_evolucao.strftime("%d/%m/%Y"),
+                descricao_evolucao.strip(),
+                "usuario_a_definir"
+            ])
+            st.success("✅ Evolução registrada com sucesso!")
 
-            # --- Atualizar status na Fila ---
-            if not df_fila.empty:
+            # --- Atualizar status na Fila diretamente na planilha ---
+            registros_fila = aba_fila.get_all_records()
+            if registros_fila:
                 colunas = [c.strip().upper() for c in aba_fila.row_values(1)]
-                col_paciente = colunas.index("PACIENTE_ID")+1
-                col_data = colunas.index("DATA")+1
-                col_status = colunas.index("STATUS")+1
+                col_paciente = colunas.index("PACIENTE_ID") + 1
+                col_data = colunas.index("DATA") + 1
+                col_status = colunas.index("STATUS") + 1
 
-                for idx, row in enumerate(df_fila.itertuples(), start=2):
-                    fila_id = str(getattr(row, "PACIENTE_ID")).strip()
-                    fila_data_raw = str(getattr(row, "DATA")).strip()
-
-                    # Convertendo datas de forma segura
+                for idx, row in enumerate(registros_fila, start=2):  # start=2 porque a primeira linha é o cabeçalho
+                    fila_id = str(row["PACIENTE_ID"]).strip()
+                    fila_data_raw = str(row["DATA"]).strip()
                     try:
                         fila_data = datetime.strptime(fila_data_raw, "%d/%m/%Y").date()
                     except:
                         continue
 
-                    if fila_id==id_paciente_str and fila_data==data_evolucao:
+                    if fila_id == id_paciente_str and fila_data == data_evolucao:
                         aba_fila.update_cell(idx, col_status, "ATENDIDO")
-                        st.success(f"✅ Status da fila atualizado para ATENDIDO (Paciente ID {id_paciente_str})")
+                        st.success(f"✅ Status da fila atualizado para ATENDIDO")
                         break
 
             # --- Redirecionar para Home ---
