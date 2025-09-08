@@ -80,6 +80,9 @@ button.stButton>button {
     font-size: 13px;
     padding: 0.25rem 0.5rem;
 }
+.sidebar-fila {
+    font-size: 14px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -136,8 +139,8 @@ if not fila_hoje.empty:
             # Card com botões
             with st.sidebar.container():
                 cols = st.columns([2,1,1,1])
-                cols[0].markdown(f"**{nome}**", unsafe_allow_html=True)
-                cols[1].markdown(f"<span style='color:{cor_status}; font-weight:bold;'>{status}</span>", unsafe_allow_html=True)
+                cols[0].markdown(f"<span class='sidebar-fila'>{nome}</span>", unsafe_allow_html=True)
+                cols[1].markdown(f"<span style='color:{cor_status}; font-weight:bold; font-size:14px'>{status}</span>", unsafe_allow_html=True)
                 
                 # Botão Ficha Clínica
                 if cols[2].button("📄", key=f"ficha_{paciente_id}"):
@@ -198,9 +201,9 @@ for idx, row in df_display.iterrows():
                 with bcol4:
                     evoluir = st.form_submit_button("🦷 Evoluir Tratamento", use_container_width=True)
 
-                # Segunda linha de botão: Agendar Hoje
-                bcol5, bcol6 = st.columns(2)
-                with bcol5, bcol6:
+                # Terceira linha: botão Agendar Hoje ocupando as duas colunas
+                bcol5, bcol6 = st.columns([1,1])
+                with bcol5:
                     agendar = st.form_submit_button("📅 Agendar Hoje", use_container_width=True)
 
                 id_str = str(row.get("Id", "")).strip()
