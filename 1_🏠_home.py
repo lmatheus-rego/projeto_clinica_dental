@@ -3,6 +3,7 @@ import datetime
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
 from streamlit.source_util import (
     get_pages,
     _on_pages_changed
@@ -19,6 +20,22 @@ def delete_page(main_script_path_str, page_name):
             break
     _on_pages_changed.send()
 
+def add_page(main_script_path_str, page_name):
+    pages = get_pages(main_script_path_str)
+    main_script_path = Path(main_script_path_str)
+    pages_dir = main_script_path.parent / "pages"
+    script_path = [f for f in list(pages_dir.glob("*.py")) + list(main_script_path.parent.glob("*.py"))
+                   if f.name.find(page_name) != -1][0]
+    script_path_str = str(script_path.resolve())
+    pi, pn = page_icon_and_name(script_path)
+    psh = calc_md5(script_path_str)
+    pages[psh] = {
+        "page_script_hash": psh,
+        "page_name": pn,
+        "icon": pi,
+        "script_path": script_path_str,
+    }
+    _on_pages_changed.send()
 # ==========================
 # Configuração inicial
 # ==========================
@@ -26,7 +43,7 @@ st.set_page_config(
     page_title="Home",
     page_icon="🏠",
 )
-st.sidebar.title("📅 Fila de Atendimento de Hoje")
+st.sidebar.title("📅 Fila de Atendimentos de Hoje")
 st.title("Projeto Céu da Boca")
 
 # Remover páginas temporárias
@@ -118,7 +135,7 @@ if not fila_hoje.empty:
                     from streamlit.source_util import add_page
                     add_page("1_🏠_home", "ficha_clinica")
                     st.switch_page("pages/ficha_clinica.py")
-                if cols[3].button("🦷", key=f"evolucao_{paciente_id}", help="Ver evolução do tratamento"):
+                if cols[3].button("🦷", key=f"evolucao_{paciente_id}", help="Incluir evolução do tratamento"):
                     st.query_params = {"idpaciente": str(paciente_id)}
                     add_page("1_🏠_home", "evolucao_tratamento")
                     st.switch_page("pages/evolucao_tratamento.py")
