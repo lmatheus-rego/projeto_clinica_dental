@@ -170,11 +170,11 @@ def badge_status_paciente(status_valor: str) -> str:
         return "<div class='badge' style='background-color:#6c757d; color:white'>-</div>"
 
     status = str(status_valor).strip().upper()
-    if status == "AGENDADO":
+    if status == "SUSPENSO":
         cor = "#FFD700"; txt = "black"
-    elif status == "ATENDIDO":
+    elif status == "ATIVO":
         cor = "#28a745"; txt = "white"
-    elif status == "CANCELADO":
+    elif status == "CANCELADO/FINALIZADO":
         cor = "#dc3545"; txt = "white"
     else:
         cor = "#6c757d"; txt = "white"
