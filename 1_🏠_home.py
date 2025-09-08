@@ -58,6 +58,9 @@ df_fila = carregar_aba("Fila")
 # ==============================
 st.sidebar.markdown("### 📅 Fila de Atendimento - Hoje")
 
+# Data de hoje
+hoje = datetime.date.today()
+
 # Normalizar colunas
 df_fila["Status"] = df_fila["Status"].astype(str).str.strip().str.lower()
 df_fila["Data"] = pd.to_datetime(
@@ -102,6 +105,7 @@ if not fila_hoje.empty:
             )
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'Agendado'.")
+
 
 
 # ===================== RESUMO GERAL =====================
