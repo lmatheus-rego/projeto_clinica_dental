@@ -135,7 +135,6 @@ if not fila_hoje.empty:
                 # Botões de ação menores
                 if cols[2].button("📄", key=f"ficha_{paciente_id}", help="Ver ficha clínica"):
                     st.query_params = {"idpaciente": str(paciente_id)}
-                    from streamlit.source_util import add_page
                     add_page("1_🏠_home", "ficha_clinica")
                     st.switch_page("pages/ficha_clinica.py")
                 if cols[3].button("🦷", key=f"evolucao_{paciente_id}", help="Incluir evolução do tratamento"):
