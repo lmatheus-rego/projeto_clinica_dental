@@ -26,7 +26,7 @@ st.set_page_config(
     page_title="Home",
     page_icon="🏠",
 )
-st.sidebar.title("Fila de Atendimento")
+st.sidebar.title("📅 Fila de Atendimento de Hoje")
 st.title("Projeto Céu da Boca")
 
 # Remover páginas temporárias
@@ -61,7 +61,7 @@ def carregar_aba(nome_aba):
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 # ==============================
-# 📋 Fila de Atendimento - Hoje
+# 📋 Fila de Atendimento - Hoje (estilizada)
 # ==============================
 st.sidebar.markdown("### 📅 Fila de Atendimento - Hoje")
 hoje = datetime.date.today()
@@ -80,11 +80,6 @@ fila_hoje = df_fila[
     (df_fila["STATUS"] == "AGENDADO")
 ]
 
-# Cabeçalho da tabela
-st.sidebar.markdown("**Nome | Status | Ficha | Evolução**")
-st.sidebar.markdown("---")
-
-# Mostrar pacientes agendados
 if not fila_hoje.empty:
     for _, row in fila_hoje.iterrows():
         paciente_id = row["PACIENTE_ID"]
@@ -96,27 +91,50 @@ if not fila_hoje.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
             status = row["STATUS"].capitalize()
 
-            # Layout por linha com colunas
-            col_nome, col_status, col_ficha, col_dente = st.sidebar.columns([2, 1, 1, 1])
+            # Container estilizado
+            with st.sidebar.container():
+                st.markdown(
+                    f"""
+                    <div style="
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: center; 
+                        padding: 6px 8px; 
+                        margin-bottom: 4px; 
+                        border-radius: 8px; 
+                        background-color: #f0f2f6;
+                        border-left: 5px solid {'#4caf50' if status=='Agendado' else '#f44336'};
+                        font-size: 14px;
+                    ">
+                        <span style="flex:2"><strong>{nome_paciente}</strong></span>
+                        <span style="flex:1; text-align:center">{status}</span>
+                        <span style="flex:1; text-align:center">
+                            <button onclick="window.location.href='#'">📄</button>
+                        </span>
+                        <span style="flex:1; text-align:center">
+                            <button onclick="window.location.href='#'">🦷</button>
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-            col_nome.markdown(f"**{nome_paciente}**")
-            col_status.markdown(status)
-
-            # Botão para ficha clínica
-            if col_ficha.button("📄", key=f"ficha_{paciente_id}"):
-                st.query_params = {"idpaciente": str(paciente_id)}
-                from streamlit.source_util import add_page
-                add_page("1_🏠_home", "ficha_clinica")
-                st.switch_page("pages/ficha_clinica.py")
-
-            # Botão para evolução do tratamento
-            if col_dente.button("🦷", key=f"dente_{paciente_id}"):
-                st.query_params = {"idpaciente": str(paciente_id)}
-                add_page("1_🏠_home", "evolucao_tratamento")
-                st.switch_page("pages/evolucao_tratamento.py")
-
+            # Botões de ação (Streamlit)
+            col_ficha, col_evolucao = st.sidebar.columns([1,1])
+            with col_ficha:
+                if st.button("📄", key=f"ficha_{paciente_id}"):
+                    st.query_params = {"idpaciente": str(paciente_id)}
+                    from streamlit.source_util import add_page
+                    add_page("1_🏠_home", "ficha_clinica")
+                    st.switch_page("pages/ficha_clinica.py")
+            with col_evolucao:
+                if st.button("🦷", key=f"evolucao_{paciente_id}"):
+                    st.query_params = {"idpaciente": str(paciente_id)}
+                    add_page("1_🏠_home", "evolucao_tratamento")
+                    st.switch_page("pages/evolucao_tratamento.py")
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'AGENDADO'.")
+
 
 # ==========================
 # RESUMO GERAL
