@@ -61,7 +61,7 @@ def carregar_aba(nome_aba):
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 # ==============================
-# 📋 Fila de Atendimento - Hoje (em cards com emojis clicáveis)
+# 📋 Fila de Atendimento - Hoje (card compacto)
 # ==============================
 hoje = datetime.date.today()
 
@@ -80,7 +80,8 @@ fila_hoje = df_fila[
 ]
 
 if not fila_hoje.empty:
-    st.sidebar.markdown("#### 🏥 Pacientes Agendados Hoje")
+    st.sidebar.markdown("### 🏥 Pacientes Agendados Hoje")
+    
     # Cabeçalho da tabela
     st.sidebar.markdown(
         "<div style='display:flex; font-weight:bold; padding:4px 8px;'>"
@@ -102,42 +103,28 @@ if not fila_hoje.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
             status = row["STATUS"].capitalize()
 
-            # Container do paciente (nome + status)
-            st.sidebar.markdown(
-                f"""
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    padding:4px 8px;
-                    margin-bottom:4px;
-                    border-radius:6px;
-                    background-color:#f9f9f9;
-                    border-left: 5px solid #4caf50;
-                    font-size:13px;
-                ">
-                    <div style='flex:2'>{nome_paciente}</div>
-                    <div style='flex:1; text-align:center'>{status}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            # Botões de ação (emojis clicáveis)
-            col_ficha, col_evolucao = st.sidebar.columns([1,1])
-            with col_ficha:
-                if st.button("📄", key=f"ficha_{paciente_id}"):
+            # Card horizontal
+            with st.sidebar.container():
+                cols = st.columns([2,1,1,1])
+                
+                # Nome
+                cols[0].markdown(f"**{nome_paciente}**")
+                # Status
+                cols[1].markdown(f"{status}", unsafe_allow_html=True)
+                # Botão de ficha clínica
+                if cols[2].button("📄", key=f"ficha_{paciente_id}"):
                     st.query_params = {"idpaciente": str(paciente_id)}
                     from streamlit.source_util import add_page
                     add_page("1_🏠_home", "ficha_clinica")
                     st.switch_page("pages/ficha_clinica.py")
-            with col_evolucao:
-                if st.button("🦷", key=f"evolucao_{paciente_id}"):
+                # Botão de evolução do tratamento
+                if cols[3].button("🦷", key=f"evolucao_{paciente_id}"):
                     st.query_params = {"idpaciente": str(paciente_id)}
                     add_page("1_🏠_home", "evolucao_tratamento")
                     st.switch_page("pages/evolucao_tratamento.py")
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'AGENDADO'.")
+
 # ==========================
 # RESUMO GERAL
 # ==========================
