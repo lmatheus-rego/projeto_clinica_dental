@@ -64,6 +64,9 @@ df_fila = carregar_aba("Fila")
 # ==========================
 # 📋 Fila de Atendimento - Hoje
 # ==========================
+# ==============================
+# 📋 Fila de Atendimento - Hoje
+# ==============================
 st.sidebar.markdown("### 📅 Fila de Atendimento - Hoje")
 hoje = datetime.date.today()
 
@@ -94,7 +97,7 @@ fila_hoje = df_fila[
 st.sidebar.write("📋 **DEBUG - Fila de Hoje**")
 st.sidebar.write(fila_hoje)
 
-# Mostrar pacientes agendados com emojis clicáveis
+# Mostrar pacientes agendados com emojis de ação
 if not fila_hoje.empty:
     for _, row in fila_hoje.iterrows():
         paciente_id = row["PACIENTE_ID"]
@@ -104,13 +107,27 @@ if not fila_hoje.empty:
 
         if not paciente.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
-            ficha_url = f"/ficha_clinica?idpaciente={paciente_id}"
-            evolucao_url = f"/evolucao_tratamento?idpaciente={paciente_id}"
 
-            st.sidebar.markdown(
-                f"- {nome_paciente} [📄]({ficha_url}) [🦷]({evolucao_url})",
-                unsafe_allow_html=True
-            )
+            # Layout melhorado: container + colunas
+            with st.sidebar.container():
+                col_nome, col_ficha, col_dente = st.columns([2, 1, 1])
+
+                col_nome.markdown(f"**{nome_paciente}**")
+
+                # Botão para ficha clínica
+                if col_ficha.button("📄", key=f"ficha_{paciente_id}"):
+                    st.query_params = {"idpaciente": str(paciente_id)}
+                    # Adicionar página se não existir
+                    from streamlit.source_util import add_page
+                    add_page("1_🏠_home", "ficha_clinica")
+                    st.switch_page("pages/ficha_clinica.py")
+
+                # Botão para evolução do tratamento
+                if col_dente.button("🦷", key=f"dente_{paciente_id}"):
+                    st.query_params = {"idpaciente": str(paciente_id)}
+                    add_page("1_🏠_home", "evolucao_tratamento")
+                    st.switch_page("pages/evolucao_tratamento.py")
+
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'AGENDADO'.")
 
