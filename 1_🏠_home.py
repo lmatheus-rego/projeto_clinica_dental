@@ -108,12 +108,6 @@ if not fila_hoje.empty:
                     ">
                         <span style="flex:2"><strong>{nome_paciente}</strong></span>
                         <span style="flex:1; text-align:center">{status}</span>
-                        <span style="flex:1; text-align:center">
-                            <button onclick="window.location.href='#'">📄</button>
-                        </span>
-                        <span style="flex:1; text-align:center">
-                            <button onclick="window.location.href='#'">🦷</button>
-                        </span>
                     </div>
                     """,
                     unsafe_allow_html=True
