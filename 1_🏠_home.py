@@ -3,10 +3,13 @@ import datetime
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-from streamlit.source_util import get_pages, _on_pages_changed
+from streamlit.source_util import (
+    get_pages,
+    _on_pages_changed
+)
 
 # ==========================
-# Função para deletar páginas do menu lateral
+# Função para deletar páginas temporárias
 # ==========================
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
@@ -17,7 +20,7 @@ def delete_page(main_script_path_str, page_name):
     _on_pages_changed.send()
 
 # ==========================
-# Configuração inicial da página
+# Configuração inicial
 # ==========================
 st.set_page_config(
     page_title="Home",
@@ -33,7 +36,7 @@ delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
 delete_page("1_🏠_home", "evolucao_tratamento")
 
 # ==========================
-# Função para carregar dados de planilha privada usando secrets
+# Função para carregar dados da planilha
 # ==========================
 def carregar_aba(nome_aba):
     scopes = [
@@ -53,70 +56,82 @@ def carregar_aba(nome_aba):
     return pd.DataFrame(dados)
 
 # ==========================
-# Carregar pacientes e fila
+# Carregar dados de Pacientes e Fila
 # ==========================
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 
-# ==============================
-# 📋 Fila de Atendimento
-# ==============================
+# ==========================
+# 📋 Fila de Atendimento - Hoje
+# ==========================
 st.sidebar.markdown("### 📅 Fila de Atendimento - Hoje")
-
-# Data de hoje
 hoje = datetime.date.today()
 
 # Normalizar colunas
-df_fila["Status"] = df_fila["Status"].astype(str).str.strip().str.lower()
-df_fila["Data"] = pd.to_datetime(df_fila["Data"], dayfirst=True, errors="coerce").dt.date
+df_fila["STATUS"] = df_fila["STATUS"].astype(str).str.strip().str.upper()
+df_fila["DATA"] = pd.to_datetime(
+    df_fila["DATA"], 
+    dayfirst=True, 
+    errors="coerce"
+).dt.date
 
-# Logs de debug
-st.sidebar.write("DEBUG - Valores únicos de Status:", df_fila["Status"].unique().tolist())
-st.sidebar.write("DEBUG - Datas convertidas (5 primeiras):", df_fila["Data"].head())
-st.sidebar.write("DEBUG - Hoje:", hoje)
+# Logs de depuração
+st.sidebar.write("📋 **DEBUG - Valores únicos de STATUS**")
+st.sidebar.write(df_fila["STATUS"].unique().tolist())
+
+st.sidebar.write("📋 **DEBUG - Datas convertidas (5 primeiras)**")
+st.sidebar.write(df_fila["DATA"].head())
+
+st.sidebar.write("📋 **DEBUG - Hoje**")
+st.sidebar.write(hoje)
 
 # Filtrar pacientes agendados para hoje
-fila_hoje = df_fila[(df_fila["Data"] == hoje) & (df_fila["Status"] == "agendado")]
+fila_hoje = df_fila[
+    (df_fila["DATA"] == hoje) & 
+    (df_fila["STATUS"] == "AGENDADO")
+]
 
-st.sidebar.write("DEBUG - Fila de Hoje:", fila_hoje)
+st.sidebar.write("📋 **DEBUG - Fila de Hoje**")
+st.sidebar.write(fila_hoje)
 
 # Mostrar pacientes agendados com emojis clicáveis
 if not fila_hoje.empty:
     for _, row in fila_hoje.iterrows():
-        paciente_id = row["Paciente_ID"]
+        paciente_id = row["PACIENTE_ID"]
 
-        # Filtrar paciente no df_pacientes correto
-        paciente = df_pacientes[df_pacientes["ID"] == paciente_id]
+        # Garantir que os IDs sejam comparáveis
+        paciente = df_pacientes[df_pacientes["ID"].astype(str).str.strip() == str(paciente_id).strip()]
 
         if not paciente.empty:
-            nome_paciente = paciente.iloc[0]["Nome"]
+            nome_paciente = paciente.iloc[0]["NOME"]
             ficha_url = f"/ficha_clinica?idpaciente={paciente_id}"
             evolucao_url = f"/evolucao_tratamento?idpaciente={paciente_id}"
 
             st.sidebar.markdown(
-                f"- {nome_paciente} "
-                f"[📄]({ficha_url}) [🦷]({evolucao_url})",
+                f"- {nome_paciente} [📄]({ficha_url}) [🦷]({evolucao_url})",
                 unsafe_allow_html=True
             )
 else:
-    st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'Agendado'.")
+    st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'AGENDADO'.")
 
-# ===================== RESUMO GERAL =====================
+# ==========================
+# RESUMO GERAL
+# ==========================
 def pacientes_do_mes(df):
-    if "Data de Atendimento" not in df.columns:
+    if "DATA DE ATENDIMENTO" not in df.columns:
         return 0
-    df["Data de Atendimento"] = pd.to_datetime(df["Data de Atendimento"], errors='coerce')
+    df["DATA DE ATENDIMENTO"] = pd.to_datetime(df["DATA DE ATENDIMENTO"], errors='coerce')
     hoje = datetime.datetime.now()
     return df[
-        (df["Data de Atendimento"].dt.month == hoje.month) &
-        (df["Data de Atendimento"].dt.year == hoje.year)
+        (df["DATA DE ATENDIMENTO"].dt.month == hoje.month) &
+        (df["DATA DE ATENDIMENTO"].dt.year == hoje.year)
     ].shape[0]
 
 total_pacientes = len(df_pacientes)
 atendidos_mes = pacientes_do_mes(df_pacientes)
 fissuras = (
-    df_pacientes["Tipo de Fissura"].value_counts().to_dict()
-    if "Tipo de Fissura" in df_pacientes.columns
+    df_pacientes["TIPO DE FISSURA"].value_counts().to_dict()
+    if "TIPO DE FISSURA" in df_pacientes.columns
     else {}
 )
 
