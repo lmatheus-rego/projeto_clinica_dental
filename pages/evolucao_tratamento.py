@@ -23,6 +23,7 @@ def add_page(main_script_path_str, page_name):
         "script_path": script_path_str,
     }
     _on_pages_changed.send()
+
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
     for key, value in current_pages.items():
@@ -57,7 +58,6 @@ def carregar_planilhas():
     return sh, aba_registros, aba_fila
 
 def carregar_paciente(id_paciente_str, sh):
-    # Carrega os dados do paciente da aba principal
     sheet_principal = sh.sheet1
     df = pd.DataFrame(sheet_principal.get_all_records())
     df.columns = df.columns.str.strip().str.upper()
@@ -110,6 +110,7 @@ if st.button("💾 Salvar Evolução"):
     if not descricao_evolucao.strip():
         st.warning("⚠️ A descrição da evolução não pode estar vazia.")
     else:
+        try:
             # Inserir evolução
             aba_registros.append_row([
                 id_paciente_str,
@@ -141,6 +142,11 @@ if st.button("💾 Salvar Evolução"):
                         break
 
             # Redirecionar para Home
+            st.query_params.clear()
+            delete_page("1_🏠_home","evolucao_tratamento")
+            st.switch_page("pages/1_🏠_home.py")
+
+        except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
 
 # ----------------- Histórico de Evoluções -----------------
@@ -149,9 +155,13 @@ try:
     df_registros = pd.DataFrame(registros)
 
     if "PACIENTE_ID" in df_registros.columns:
-        df_paciente = df_registros[df_registros["PACIENTE_ID"].astype(str) == id_paciente_str]
-        df_paciente["DATA_REGISTRO"] = pd.to_datetime(df_paciente["DATA_REGISTRO"], format="%d/%m/%Y", errors="coerce")
-        df_paciente = df_paciente.dropna(subset=["DATA_REGISTRO"]).sort_values(by="DATA_REGISTRO", ascending=False).reset_index(drop=True)
+        df_paciente = df_registros[df_registros["PACIENTE_ID"].astype(str) == id_paciente_str].copy()
+        df_paciente["DATA_REGISTRO"] = pd.to_datetime(
+            df_paciente["DATA_REGISTRO"], format="%d/%m/%Y", errors="coerce"
+        )
+        df_paciente = df_paciente.dropna(subset=["DATA_REGISTRO"]).sort_values(
+            by="DATA_REGISTRO", ascending=False
+        ).reset_index(drop=True)
 
         if not df_paciente.empty:
             st.markdown("<h4>📜 Histórico de Evoluções</h4><hr>", unsafe_allow_html=True)
