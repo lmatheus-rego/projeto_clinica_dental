@@ -60,10 +60,6 @@ def carregar_aba(nome_aba):
 # ==========================
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
-
-# ==========================
-# 📋 Fila de Atendimento - Hoje
-# ==========================
 # ==============================
 # 📋 Fila de Atendimento - Hoje
 # ==============================
@@ -78,26 +74,17 @@ df_fila["DATA"] = pd.to_datetime(
     errors="coerce"
 ).dt.date
 
-# Logs de depuração
-st.sidebar.write("📋 **DEBUG - Valores únicos de STATUS**")
-st.sidebar.write(df_fila["STATUS"].unique().tolist())
-
-st.sidebar.write("📋 **DEBUG - Datas convertidas (5 primeiras)**")
-st.sidebar.write(df_fila["DATA"].head())
-
-st.sidebar.write("📋 **DEBUG - Hoje**")
-st.sidebar.write(hoje)
-
 # Filtrar pacientes agendados para hoje
 fila_hoje = df_fila[
     (df_fila["DATA"] == hoje) & 
     (df_fila["STATUS"] == "AGENDADO")
 ]
 
-st.sidebar.write("📋 **DEBUG - Fila de Hoje**")
-st.sidebar.write(fila_hoje)
+# Cabeçalho da tabela
+st.sidebar.markdown("**Nome | Status | Ficha | Evolução**")
+st.sidebar.markdown("---")
 
-# Mostrar pacientes agendados com emojis de ação
+# Mostrar pacientes agendados
 if not fila_hoje.empty:
     for _, row in fila_hoje.iterrows():
         paciente_id = row["PACIENTE_ID"]
@@ -107,26 +94,26 @@ if not fila_hoje.empty:
 
         if not paciente.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
+            status = row["STATUS"].capitalize()
 
-            # Layout melhorado: container + colunas
-            with st.sidebar.container():
-                col_nome, col_ficha, col_dente = st.columns([2, 1, 1])
+            # Layout por linha com colunas
+            col_nome, col_status, col_ficha, col_dente = st.sidebar.columns([2, 1, 1, 1])
 
-                col_nome.markdown(f"**{nome_paciente}**")
+            col_nome.markdown(f"**{nome_paciente}**")
+            col_status.markdown(status)
 
-                # Botão para ficha clínica
-                if col_ficha.button("📄", key=f"ficha_{paciente_id}"):
-                    st.query_params = {"idpaciente": str(paciente_id)}
-                    # Adicionar página se não existir
-                    from streamlit.source_util import add_page
-                    add_page("1_🏠_home", "ficha_clinica")
-                    st.switch_page("pages/ficha_clinica.py")
+            # Botão para ficha clínica
+            if col_ficha.button("📄", key=f"ficha_{paciente_id}"):
+                st.query_params = {"idpaciente": str(paciente_id)}
+                from streamlit.source_util import add_page
+                add_page("1_🏠_home", "ficha_clinica")
+                st.switch_page("pages/ficha_clinica.py")
 
-                # Botão para evolução do tratamento
-                if col_dente.button("🦷", key=f"dente_{paciente_id}"):
-                    st.query_params = {"idpaciente": str(paciente_id)}
-                    add_page("1_🏠_home", "evolucao_tratamento")
-                    st.switch_page("pages/evolucao_tratamento.py")
+            # Botão para evolução do tratamento
+            if col_dente.button("🦷", key=f"dente_{paciente_id}"):
+                st.query_params = {"idpaciente": str(paciente_id)}
+                add_page("1_🏠_home", "evolucao_tratamento")
+                st.switch_page("pages/evolucao_tratamento.py")
 
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'AGENDADO'.")
