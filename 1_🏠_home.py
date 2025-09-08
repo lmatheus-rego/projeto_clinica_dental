@@ -61,7 +61,7 @@ def carregar_aba(nome_aba):
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 # ==============================
-# 📋 Fila de Atendimento - Hoje (card compacto)
+# 📋 Fila de Atendimento - Hoje (compacta e estilizada)
 # ==============================
 hoje = datetime.date.today()
 
@@ -83,11 +83,11 @@ if not fila_hoje.empty:
     
     # Cabeçalho da tabela
     st.sidebar.markdown(
-        "<div style='display:flex; font-weight:bold; padding:4px 8px;'>"
+        "<div style='display:flex; font-weight:bold; padding:4px 8px; font-size:12px;'>"
         "<div style='flex:2'>NOME</div>"
         "<div style='flex:1; text-align:center'>STATUS</div>"
         "<div style='flex:1; text-align:center'>FICHA</div>"
-        "<div style='flex:1; text-align:center'>EVOLUÇAO</div>"
+        "<div style='flex:1; text-align:center'>EVOLUÇÃO</div>"
         "</div>",
         unsafe_allow_html=True
     )
@@ -102,22 +102,23 @@ if not fila_hoje.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
             status = row["STATUS"].capitalize()
 
-            # Card horizontal
+            # Card horizontal estilizado
             with st.sidebar.container():
                 cols = st.columns([2,1,1,1])
                 
-                # Nome
-                cols[0].markdown(f"**{nome_paciente}**")
-                # Status
-                cols[1].markdown(f"{status}", unsafe_allow_html=True)
-                # Botão de ficha clínica
-                if cols[2].button("📄", key=f"ficha_{paciente_id}"):
+                # Nome do paciente com fonte menor
+                cols[0].markdown(f"<span style='font-size:13px; font-weight:500'>{nome_paciente}</span>", unsafe_allow_html=True)
+                
+                # Status com fonte menor e centralizado
+                cols[1].markdown(f"<span style='font-size:12px; text-align:center'>{status}</span>", unsafe_allow_html=True)
+                
+                # Botões de ação menores
+                if cols[2].button("📄", key=f"ficha_{paciente_id}", help="Ver ficha clínica"):
                     st.query_params = {"idpaciente": str(paciente_id)}
                     from streamlit.source_util import add_page
                     add_page("1_🏠_home", "ficha_clinica")
                     st.switch_page("pages/ficha_clinica.py")
-                # Botão de evolução do tratamento
-                if cols[3].button("🦷", key=f"evolucao_{paciente_id}"):
+                if cols[3].button("🦷", key=f"evolucao_{paciente_id}", help="Ver evolução do tratamento"):
                     st.query_params = {"idpaciente": str(paciente_id)}
                     add_page("1_🏠_home", "evolucao_tratamento")
                     st.switch_page("pages/evolucao_tratamento.py")
