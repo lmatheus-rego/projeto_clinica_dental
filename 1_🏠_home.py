@@ -54,39 +54,63 @@ df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 
 # ===================== FILA DO DIA =====================# ===================== FILA DO DIA =====================
+# ====================== FILA DE ATENDIMENTO ======================
+# Função para carregar fila de atendimento
+def carregar_fila():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    credentials = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scopes
+    )
+    gc = gspread.authorize(credentials)
+
+    SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+    fila_sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("Fila")
+    fila = fila_sheet.get_all_records()
+    return pd.DataFrame(fila)
+
+# Carregar fila
+df_fila = carregar_fila()
+
+# LOG 1 - Mostrar conteúdo cru da fila
+st.sidebar.write("📋 **DEBUG - Conteúdo da Fila**")
+st.sidebar.dataframe(df_fila)
+
+# Filtrar pacientes agendados para hoje
 hoje = datetime.datetime.now().date()
 
-if not df_fila.empty:
-    df_fila["Data"] = pd.to_datetime(df_fila["Data"], errors="coerce").dt.date
-    fila_hoje = df_fila[
-        (df_fila["Data"] == hoje) & (df_fila["Status"] == "Agendado")
-    ]
+df_fila["Data"] = pd.to_datetime(df_fila["Data"], errors="coerce").dt.date
 
-    if not fila_hoje.empty:
-        st.sidebar.subheader("👥 Agendados Hoje")
-        for _, row in fila_hoje.iterrows():
-            paciente_id = row["Paciente_ID"]
-            paciente_info = df_pacientes[df_pacientes["ID"] == paciente_id]
+# LOG 2 - Mostrar datas convertidas
+st.sidebar.write("📋 **DEBUG - Datas convertidas**")
+st.sidebar.write(df_fila[["Paciente_ID", "Data", "Status"]])
 
-            if not paciente_info.empty:
-                nome = paciente_info.iloc[0]["Nome"]
-            else:
-                nome = f"ID {paciente_id}"
+fila_hoje = df_fila[
+    (df_fila["Data"] == hoje) & (df_fila["Status"].str.lower() == "agendado")
+]
 
-            # Links para páginas específicas com query param idpaciente
-            ficha_url = f"/ficha_clinica?idpaciente={paciente_id}"
-            evolucao_url = f"/evolucao_tratamento?idpaciente={paciente_id}"
+# LOG 3 - Mostrar resultado do filtro
+st.sidebar.write("📋 **DEBUG - Fila de Hoje**")
+st.sidebar.dataframe(fila_hoje)
 
-            st.sidebar.markdown(
-                f"- {nome} "
-                f"[📋]({ficha_url}) "
-                f"[🦷]({evolucao_url})",
-                unsafe_allow_html=True
-            )
-    else:
-        st.sidebar.info("Nenhum paciente agendado para hoje.")
+# Se não encontrou nada, avisa
+if fila_hoje.empty:
+    st.sidebar.warning("⚠️ Nenhum paciente encontrado para hoje com status 'Agendado'.")
 else:
-    st.sidebar.warning("A aba 'Fila' está vazia ou não existe.")
+    st.sidebar.subheader("👥 Pacientes Agendados Hoje")
+    for _, row in fila_hoje.iterrows():
+        nome_paciente = df.loc[df["ID"] == row["Paciente_ID"], "Nome"].values
+        nome_paciente = nome_paciente[0] if len(nome_paciente) > 0 else "Desconhecido"
+
+        st.sidebar.markdown(
+            f"- {nome_paciente} "
+            f"[📄](?idpaciente={row['Paciente_ID']}&page=ficha_clinica) "
+            f"[🦷](?idpaciente={row['Paciente_ID']}&page=evolucao_tratamento)"
+        )
+
 
 
 # ===================== RESUMO GERAL =====================
