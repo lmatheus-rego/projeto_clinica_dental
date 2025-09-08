@@ -16,21 +16,21 @@ def delete_page(main_script_path_str, page_name):
 
 def carregar_planilhas():
     scopes = ["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"]
-    service_account_info = {k: v.replace('\\n','\n') if k=='private_key' else v for k,v in st.secrets['gcp_service_account'].items()}
+    service_account_info = {k: v.replace('\\n', '\n') if k=="private_key" else v for k,v in st.secrets["gcp_service_account"].items()}
     credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
     gc = gspread.authorize(credentials)
     SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
     sh = gc.open_by_key(SPREADSHEET_ID)
 
-    # Registros
+    # Carregar Registros
     try:
         aba_registros = sh.worksheet("Registros")
     except gspread.exceptions.WorksheetNotFound:
         aba_registros = sh.add_worksheet("Registros", rows="1000", cols="10")
-        aba_registros.append_row(["PACIENTE_ID","DATA_REGISTRO","EVOLUCAO","USUARIO"])
+        aba_registros.append_row(["PACIENTE_ID", "DATA_REGISTRO", "EVOLUCAO", "USUARIO"])
     df_registros = pd.DataFrame(aba_registros.get_all_records())
 
-    # Fila
+    # Carregar Fila
     try:
         aba_fila = sh.worksheet("Fila")
     except gspread.exceptions.WorksheetNotFound:
@@ -51,8 +51,10 @@ sh, aba_registros, df_registros, aba_fila, df_fila = carregar_planilhas()
 
 # --- Captura do ID via URL ---
 id_paciente_str = st.query_params.get("idpaciente", [""])[0].strip()
-if not id_paciente_str:
-    st.error("ID do paciente não encontrado.")
+try:
+    id_paciente = int(id_paciente_str)
+except:
+    st.error("ID do paciente inválido.")
     st.stop()
 
 # --- Verificar paciente ---
@@ -70,7 +72,7 @@ descricao_evolucao = st.text_area("📝 **Descrição da Evolução**", height=1
 data_evolucao = st.date_input("📅 **Data da Evolução**", format="DD/MM/YYYY")
 
 if st.button("💾 Salvar Evolução"):
-    if not descricao_evolucao.strip():
+    if descricao_evolucao.strip() == "":
         st.warning("⚠️ A descrição da evolução não pode estar vazia.")
     else:
         try:
@@ -78,29 +80,27 @@ if st.button("💾 Salvar Evolução"):
             nova_linha = [id_paciente_str, data_evolucao.strftime("%d/%m/%Y"), descricao_evolucao.strip(), "usuario_a_definir"]
             aba_registros.append_row(nova_linha)
 
-            # --- Atualizar status na Fila ---
+            # --- Atualizar status da Fila ---
             if not df_fila.empty:
                 colunas = [c.strip().upper() for c in aba_fila.row_values(1)]
                 col_paciente = colunas.index("PACIENTE_ID")+1
                 col_data = colunas.index("DATA")+1
                 col_status = colunas.index("STATUS")+1
 
+                # Normalizar datas para comparação
                 for idx, row in enumerate(df_fila.itertuples(), start=2):
-                    fila_id = str(getattr(row, "PACIENTE_ID")).strip()
-                    fila_data_raw = str(getattr(row, "DATA")).strip()
-
-                    # Convertendo datas de forma segura
+                    fila_paciente = str(getattr(row,"PACIENTE_ID")).strip()
+                    fila_data_str = str(getattr(row,"DATA")).strip()
                     try:
-                        fila_data = datetime.strptime(fila_data_raw, "%d/%m/%Y").date()
+                        fila_data = datetime.strptime(fila_data_str, "%d/%m/%Y").date()
                     except:
                         continue
-
-                    if fila_id==id_paciente_str and fila_data==data_evolucao:
+                    if fila_paciente==id_paciente_str and fila_data==data_evolucao:
                         aba_fila.update_cell(idx, col_status, "ATENDIDO")
-                        st.success(f"✅ Status da fila atualizado para ATENDIDO (Paciente ID {id_paciente_str})")
                         break
 
-            # --- Redirecionar para Home ---
+            st.success("✅ Evolução registrada com sucesso!")
+            # Redirecionar para Home
             st.query_params.clear()
             delete_page("1_🏠_home","evolucao_tratamento")
             st.switch_page("pages/1_🏠_home.py")
