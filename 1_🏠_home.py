@@ -80,15 +80,14 @@ fila_hoje = df_fila[
 ]
 
 if not fila_hoje.empty:
-    st.sidebar.markdown("### 🏥 Pacientes Agendados Hoje")
     
     # Cabeçalho da tabela
     st.sidebar.markdown(
         "<div style='display:flex; font-weight:bold; padding:4px 8px;'>"
-        "<div style='flex:2'>Nome</div>"
-        "<div style='flex:1; text-align:center'>Status</div>"
-        "<div style='flex:1; text-align:center'>Ficha</div>"
-        "<div style='flex:1; text-align:center'>Evolução</div>"
+        "<div style='flex:2'>NOME</div>"
+        "<div style='flex:1; text-align:center'>STATUS</div>"
+        "<div style='flex:1; text-align:center'>FICHA</div>"
+        "<div style='flex:1; text-align:center'>EVOLUÇAO</div>"
         "</div>",
         unsafe_allow_html=True
     )
