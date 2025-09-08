@@ -80,6 +80,18 @@ fila_hoje = df_fila[
 ]
 
 if not fila_hoje.empty:
+    st.sidebar.markdown("#### 🏥 Pacientes Agendados Hoje")
+    # Cabeçalho da tabela
+    st.sidebar.markdown(
+        "<div style='display:flex; font-weight:bold; padding:4px 8px;'>"
+        "<div style='flex:2'>Nome</div>"
+        "<div style='flex:1; text-align:center'>Status</div>"
+        "<div style='flex:1; text-align:center'>Ficha</div>"
+        "<div style='flex:1; text-align:center'>Evolução</div>"
+        "</div>",
+        unsafe_allow_html=True
+    )
+
     for _, row in fila_hoje.iterrows():
         paciente_id = row["PACIENTE_ID"]
 
@@ -90,29 +102,30 @@ if not fila_hoje.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
             status = row["STATUS"].capitalize()
 
-            # Container estilizado
-            with st.sidebar.container():
-                st.markdown(
-                    f"""
-                    <div style="
-                        display: flex; 
-                        justify-content: space-between; 
-                        align-items: center; 
-                        padding: 6px 8px; 
-                        margin-bottom: 4px; 
-                        border-radius: 8px; 
-                        background-color: #f0f2f6;
-                        border-left: 5px solid {'#4caf50' if status=='Agendado' else '#f44336'};
-                        font-size: 14px;
-                    ">
-                        <span style="flex:2"><strong>{nome_paciente}</strong></span>
-                        <span style="flex:1; text-align:center">{status}</span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            # Card do paciente
+            st.sidebar.markdown(
+                f"""
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    padding:4px 8px;
+                    margin-bottom:4px;
+                    border-radius:6px;
+                    background-color:#f9f9f9;
+                    border-left: 5px solid #4caf50;
+                    font-size:13px;
+                ">
+                    <div style='flex:2'>{nome_paciente}</div>
+                    <div style='flex:1; text-align:center'>{status}</div>
+                    <div style='flex:1; text-align:center'>📄</div>
+                    <div style='flex:1; text-align:center'>🦷</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-            # Botões de ação (Streamlit)
+            # Botões de ação reais do Streamlit (para redirecionamento)
             col_ficha, col_evolucao = st.sidebar.columns([1,1])
             with col_ficha:
                 if st.button("📄", key=f"ficha_{paciente_id}"):
@@ -127,8 +140,6 @@ if not fila_hoje.empty:
                     st.switch_page("pages/evolucao_tratamento.py")
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje com status 'AGENDADO'.")
-
-
 # ==========================
 # RESUMO GERAL
 # ==========================
