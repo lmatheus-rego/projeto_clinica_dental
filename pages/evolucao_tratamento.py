@@ -110,7 +110,6 @@ if st.button("💾 Salvar Evolução"):
     if not descricao_evolucao.strip():
         st.warning("⚠️ A descrição da evolução não pode estar vazia.")
     else:
-        try:
             # Inserir evolução
             aba_registros.append_row([
                 id_paciente_str,
@@ -142,8 +141,7 @@ if st.button("💾 Salvar Evolução"):
                         break
 
             # Redirecionar para Home
-
-        except Exception as e:
+            st.error(f"Erro ao salvar evolução: {e}")
 
 # ----------------- Histórico de Evoluções -----------------
 try:
