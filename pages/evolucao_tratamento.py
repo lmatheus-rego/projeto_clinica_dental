@@ -131,9 +131,7 @@ if st.button("💾 Salvar Evolução"):
                         break
 
         
-            st.query_params.clear()
-            delete_page("1_🏠_home", "evolucao_tratamento")
-            st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+            st.experimental_rerun()
 
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
