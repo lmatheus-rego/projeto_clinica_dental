@@ -2,7 +2,7 @@ import streamlit as st
 import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-import streamlit.components.v1 as components
+import re
 
 st.set_page_config(page_title="Cadastro de Pacientes", page_icon="🦷", layout="wide")
 
@@ -28,7 +28,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='header'><h2>🦷 Cadastro de Pacientes</h2></div>", unsafe_allow_html=True)
+# 🔹 Título simples
+st.title("🦷 Cadastro de Pacientes")
 
 # ------------------ Google Sheets ------------------
 def conectar_planilha():
@@ -68,15 +69,7 @@ with st.form("include_paciente"):
         col1, col2 = st.columns(2)
         with col1:
             nome = st.text_input("Nome *", key="nome")
-
-            # FAO com máscara
-            fao_html = """
-                <input id="fao" name="fao" placeholder="12345/67" maxlength="8"
-                style="width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;" 
-                oninput="this.value=this.value.replace(/\\D/g,'').replace(/(\\d{5})(\\d{0,2})/,'$1/$2');">
-            """
-            fao = components.html(fao_html, height=50)
-
+            fao = st.text_input("FAO", placeholder="12345/67", key="fao")
             data_nasc = st.date_input("Data de Nascimento *", 
                                       value=datetime.date(2000, 1, 1),
                                       min_value=datetime.date(1900, 1, 1),
@@ -87,15 +80,7 @@ with st.form("include_paciente"):
         with col2:
             filiacao = st.text_input("Filiação", key="filiacao")
             endereco = st.text_input("Endereço", key="endereco")
-
-            # Telefone com máscara
-            telefone_html = """
-                <input id="telefone" name="telefone" placeholder="(92) 99999-9999" maxlength="15"
-                style="width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;"
-                oninput="this.value=this.value.replace(/\\D/g,'')
-                .replace(/(\\d{2})(\\d{5})(\\d{4})/,'($1) $2-$3');">
-            """
-            telefone = components.html(telefone_html, height=50)
+            telefone = st.text_input("Telefone", placeholder="(92) 99999-9999", key="telefone")
 
     with st.expander("⚕️ Dados Clínicos", expanded=True):
         tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
@@ -113,20 +98,24 @@ if submit:
     if not sexo.strip():
         erros.append("Sexo")
 
+    # 🔹 Validação FAO
+    if fao.strip() and not re.fullmatch(r"\d{5}/\d{2}", fao.strip()):
+        erros.append("FAO inválido (use formato 12345/67)")
+
+    # 🔹 Validação Telefone
+    if telefone.strip() and not re.fullmatch(r"\(\d{2}\) \d{4,5}-\d{4}", telefone.strip()):
+        erros.append("Telefone inválido (use formato (92) 99999-9999)")
+
     if erros:
-        st.error(f"⚠️ Campos obrigatórios não preenchidos: {', '.join(erros)}")
+        st.error(f"⚠️ Corrija os seguintes campos: {', '.join(erros)}")
     else:
         planilha = conectar_planilha()
         novo_id = gerar_proximo_id(planilha)
         idade = calcular_idade(data_nasc)
 
-        # 🚨 Pegar FAO e Telefone do backend (aqui placeholders por enquanto)
-        fao_valor = st.session_state.get("fao", "")
-        telefone_valor = st.session_state.get("telefone", "")
-
         nova_linha = [
             str(novo_id), nome, idade, data_nasc.strftime("%d/%m/%Y"), sexo,
-            filiacao, endereco, telefone_valor, fao_valor, tipo_fissura, historia, "Ativo"
+            filiacao, endereco, telefone, fao, tipo_fissura, historia, "Ativo"
         ]
         planilha.append_row(nova_linha, value_input_option="USER_ENTERED")
 
