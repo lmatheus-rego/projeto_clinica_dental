@@ -6,28 +6,6 @@ import re
 
 st.set_page_config(page_title="Cadastro de Pacientes", page_icon="🦷", layout="wide")
 
-# ------------------ Estilo ------------------
-st.markdown("""
-    <style>
-    .stButton>button {
-        width: 100%;
-        background-color: #0d6efd;
-        color: white;
-        border-radius: 8px;
-        border: none;
-        padding: 10px;
-        font-weight: bold;
-    }
-    .stButton>button:hover {
-        background-color: #0b5ed7;
-        color: white;
-    }
-    input.error, select.error, textarea.error {
-        border: 2px solid red !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 st.title("🦷 Cadastro de Pacientes")
 
 # ------------------ Google Sheets ------------------
@@ -49,44 +27,53 @@ def calcular_idade(data_nasc):
     hoje = datetime.date.today()
     return hoje.year - data_nasc.year - ((hoje.month, hoje.day) < (data_nasc.month, data_nasc.day))
 
-# ------------------ Inicializar Session State ------------------
-for key in ["nome", "fao", "data", "sexo", "filiacao", "endereco", "telefone", "tipo_fissura", "historia", "sucesso"]:
-    if key not in st.session_state:
-        if key == "data":
-            st.session_state[key] = datetime.date(2000,1,1)
-        elif key == "sucesso":
-            st.session_state[key] = False
-        else:
-            st.session_state[key] = ""
-
-# ------------------ Mensagem Sucesso ------------------
-if st.session_state.sucesso:
-    st.success("✅ Paciente cadastrado com sucesso!")
+# ------------------ Inicializar session_state ------------------
+campos = ["nome","fao","data","sexo","filiacao","endereco","telefone","tipo_fissura","historia","sucesso"]
+if "sucesso" not in st.session_state:
     st.session_state.sucesso = False
+
+for campo in campos:
+    if campo not in st.session_state:
+        if campo == "data":
+            st.session_state[campo] = datetime.date(2000,1,1)
+        else:
+            st.session_state[campo] = ""
+
+# Função para resetar formulário
+def resetar_formulario():
+    for campo in campos:
+        if campo == "data":
+            st.session_state[campo] = datetime.date(2000,1,1)
+        elif campo != "sucesso":
+            st.session_state[campo] = ""
+    st.session_state.sucesso = True
 
 # ------------------ Formulário ------------------
 with st.form("include_paciente"):
-    with st.expander("📋 Dados Pessoais", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            nome = st.text_input("Nome *", key="nome")
-            fao = st.text_input("FAO", placeholder="12345/67", key="fao")
-            data_nasc = st.date_input("Data de Nascimento *", 
-                                      value=st.session_state.data,
-                                      min_value=datetime.date(1900, 1, 1),
-                                      max_value=datetime.date.today(),
-                                      key="data", format="DD/MM/YYYY")
-            sexo = st.selectbox("Sexo *", ["", "Masculino", "Feminino"], key="sexo")
-        with col2:
-            filiacao = st.text_input("Filiação", key="filiacao")
-            endereco = st.text_input("Endereço", key="endereco")
-            telefone = st.text_input("Telefone", placeholder="(92) 99999-9999", key="telefone")
+    col1, col2 = st.columns(2)
+    with col1:
+        nome = st.text_input("Nome *", key="nome")
+        fao = st.text_input("FAO", placeholder="12345/67", key="fao")
+        data_nasc = st.date_input("Data de Nascimento *",
+                                  value=st.session_state.data,
+                                  min_value=datetime.date(1900,1,1),
+                                  max_value=datetime.date.today(),
+                                  key="data", format="DD/MM/YYYY")
+        sexo = st.selectbox("Sexo *", ["", "Masculino", "Feminino"], key="sexo")
+    with col2:
+        filiacao = st.text_input("Filiação", key="filiacao")
+        endereco = st.text_input("Endereço", key="endereco")
+        telefone = st.text_input("Telefone", placeholder="(92) 99999-9999", key="telefone")
 
-    with st.expander("⚕️ Dados Clínicos", expanded=True):
-        tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
-        historia = st.text_area("História do Tratamento", key="historia")
+    tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
+    historia = st.text_area("História do Tratamento", key="historia")
 
-    submit = st.form_submit_button("💾 Salvar Paciente")
+    submit = st.form_submit_button("💾 Salvar Paciente", on_click=resetar_formulario)
+
+# ------------------ Mensagem de sucesso ------------------
+if st.session_state.sucesso:
+    st.success("✅ Paciente cadastrado com sucesso!")
+    st.session_state.sucesso = False
 
 # ------------------ Processamento ------------------
 if submit:
@@ -97,10 +84,8 @@ if submit:
         erros.append("Data de Nascimento")
     if not sexo.strip():
         erros.append("Sexo")
-
     if fao.strip() and not re.fullmatch(r"\d{5}/\d{2}", fao.strip()):
         erros.append("FAO inválido (use formato 12345/67)")
-
     if telefone.strip() and not re.fullmatch(r"(\(\d{2}\)\d{8,9}|\(\d{2}\)\d{5}-\d{4}|\d{11})", telefone.strip()):
         erros.append("Telefone inválido (use formatos: 92999999999, (92)999999999, (92)99999-9999)")
 
@@ -116,17 +101,3 @@ if submit:
             filiacao, endereco, telefone, fao, tipo_fissura, historia, "Ativo"
         ]
         planilha.append_row(nova_linha, value_input_option="USER_ENTERED")
-
-        # Resetar formulário via session_state
-        st.session_state.nome = ""
-        st.session_state.fao = ""
-        st.session_state.data = datetime.date(2000,1,1)
-        st.session_state.sexo = ""
-        st.session_state.filiacao = ""
-        st.session_state.endereco = ""
-        st.session_state.telefone = ""
-        st.session_state.tipo_fissura = ""
-        st.session_state.historia = ""
-        st.session_state.sucesso = True
-
-        st.experimental_rerun()
