@@ -103,8 +103,10 @@ if submit:
         erros.append("FAO inválido (use formato 12345/67)")
 
     # 🔹 Validação Telefone
-    if telefone.strip() and not re.fullmatch(r"\(\d{2}\) \d{4,5}-\d{4}", telefone.strip()):
-        erros.append("Telefone inválido (use formato (92) 99999-9999)")
+    # 🔹 Validação Telefone
+    if telefone.strip() and not re.fullmatch(r"(\(\d{2}\)\d{8,9}|\(\d{2}\)\d{5}-\d{4}|\d{11})", telefone.strip()):
+     erros.append("Telefone inválido (use formatos validos: 92999999999, (92)999999999, (92)99999-9999)")
+
 
     if erros:
         st.error(f"⚠️ Corrija os seguintes campos: {', '.join(erros)}")
