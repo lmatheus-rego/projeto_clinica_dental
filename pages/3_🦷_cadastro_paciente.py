@@ -153,4 +153,4 @@ if input_button_submit:
             "historia": ""
         }
 
-        st.experimental_rerun()
+        st.rerun()
