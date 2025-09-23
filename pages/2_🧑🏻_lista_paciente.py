@@ -227,9 +227,9 @@ for idx, row in df_pacientes.iterrows():
                 with bcol2:
                     editar = st.form_submit_button("✏️ Editar Dados", use_container_width=True)
                 with bcol3:
-                    exames = st.form_submit_button("🧾 Inserir Dados Clinicos", use_container_width=True)
+                    exames = st.form_submit_button("🧾 + Dados Clinicos", use_container_width=True)
                 with bcol4:
-                    evoluir = st.form_submit_button("🦷 Evolução", use_container_width=True)
+                    evoluir = st.form_submit_button("🦷 + Evolução", use_container_width=True)
 
                 agendar = st.form_submit_button("📅 Agendar Hoje", use_container_width=True)
 
