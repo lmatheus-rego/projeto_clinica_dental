@@ -9,14 +9,6 @@ st.set_page_config(page_title="Cadastro de Pacientes", page_icon="🦷", layout=
 # ------------------ Estilo ------------------
 st.markdown("""
     <style>
-    .header {
-        background: linear-gradient(90deg, #0d6efd, #2c3e50);
-        color: white;
-        text-align: center;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-    }
     .stButton>button {
         width: 100%;
         background-color: #0d6efd;
