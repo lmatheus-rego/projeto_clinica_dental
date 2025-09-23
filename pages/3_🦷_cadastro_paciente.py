@@ -6,6 +6,7 @@ import re
 
 st.set_page_config(page_title="Cadastro de Pacientes", page_icon="🦷", layout="wide")
 
+# 🔹 Título
 st.title("🦷 Cadastro de Pacientes")
 
 # ------------------ Google Sheets ------------------
@@ -39,7 +40,7 @@ for campo in campos:
         else:
             st.session_state[campo] = ""
 
-# Função para resetar formulário
+# ------------------ Função para resetar formulário ------------------
 def resetar_formulario():
     for campo in campos:
         if campo == "data":
@@ -50,23 +51,26 @@ def resetar_formulario():
 
 # ------------------ Formulário ------------------
 with st.form("include_paciente"):
-    col1, col2 = st.columns(2)
-    with col1:
-        nome = st.text_input("Nome *", key="nome")
-        fao = st.text_input("FAO", placeholder="12345/67", key="fao")
-        data_nasc = st.date_input("Data de Nascimento *",
-                                  value=st.session_state.data,
-                                  min_value=datetime.date(1900,1,1),
-                                  max_value=datetime.date.today(),
-                                  key="data", format="DD/MM/YYYY")
-        sexo = st.selectbox("Sexo *", ["", "Masculino", "Feminino"], key="sexo")
-    with col2:
-        filiacao = st.text_input("Filiação", key="filiacao")
-        endereco = st.text_input("Endereço", key="endereco")
-        telefone = st.text_input("Telefone", placeholder="(92) 99999-9999", key="telefone")
-
-    tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
-    historia = st.text_area("História do Tratamento", key="historia")
+    
+    with st.expander("📋 Dados Pessoais", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            nome = st.text_input("Nome *", key="nome")
+            fao = st.text_input("FAO", placeholder="12345/67", key="fao")
+            data_nasc = st.date_input("Data de Nascimento *",
+                                      value=st.session_state.data,
+                                      min_value=datetime.date(1900,1,1),
+                                      max_value=datetime.date.today(),
+                                      key="data", format="DD/MM/YYYY")
+            sexo = st.selectbox("Sexo *", ["", "Masculino", "Feminino"], key="sexo")
+        with col2:
+            filiacao = st.text_input("Filiação", key="filiacao")
+            endereco = st.text_input("Endereço", key="endereco")
+            telefone = st.text_input("Telefone", placeholder="(92) 99999-9999", key="telefone")
+    
+    with st.expander("⚕️ Dados Clínicos", expanded=True):
+        tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
+        historia = st.text_area("História do Tratamento", key="historia")
 
     submit = st.form_submit_button("💾 Salvar Paciente", on_click=resetar_formulario)
 
