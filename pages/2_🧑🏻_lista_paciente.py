@@ -5,6 +5,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
 from datetime import date
+import time
 
 st.set_page_config(layout="wide", page_title="Lista de Pacientes")
 
@@ -29,7 +30,7 @@ def add_page(main_script_path_str, page_name):
     _on_pages_changed.send()
 
 # ==========================
-# Função para carregar dados da planilha
+# Função para conectar Google Sheets
 # ==========================
 def conectar_planilha():
     scopes = [
@@ -54,21 +55,38 @@ def conectar_planilha():
     gc = gspread.authorize(credentials)
     return gc
 
+# ==========================
+# Função para carregar dados com retry e delay
+# ==========================
 def carregar_dados():
-    gc = conectar_planilha()
     SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
+    gc = conectar_planilha()
+    
+    max_retries = 5
+    delay_segundos = 1
+    
+    for attempt in range(max_retries):
+        try:
+            # Pacientes
+            sheet_pacientes = gc.open_by_key(SPREADSHEET_ID).worksheet("Pacientes")
+            dados_pacientes = sheet_pacientes.get_all_records()
+            df_pacientes = pd.DataFrame(dados_pacientes)
 
-    # Pacientes
-    sheet_pacientes = gc.open_by_key(SPREADSHEET_ID).worksheet("Pacientes")
-    dados_pacientes = sheet_pacientes.get_all_records()
-    df_pacientes = pd.DataFrame(dados_pacientes)
+            # Fila
+            sheet_fila = gc.open_by_key(SPREADSHEET_ID).worksheet("Fila")
+            dados_fila = sheet_fila.get_all_records()
+            df_fila = pd.DataFrame(dados_fila)
 
-    # Fila
-    sheet_fila = gc.open_by_key(SPREADSHEET_ID).worksheet("Fila")
-    dados_fila = sheet_fila.get_all_records()
-    df_fila = pd.DataFrame(dados_fila)
-
-    return df_pacientes, df_fila, gc
+            return df_pacientes, df_fila, gc
+        except gspread.exceptions.APIError:
+            st.warning(f"Erro no Google Sheets (tentativa {attempt+1}/{max_retries}), aguardando {delay_segundos}s...")
+            time.sleep(delay_segundos)
+        except Exception as e:
+            st.error(f"Erro inesperado: {e}")
+            st.stop()
+    
+    st.error("❌ Não foi possível carregar os dados da planilha após várias tentativas.")
+    st.stop()
 
 # ==========================
 # CSS para cards
@@ -136,16 +154,9 @@ if not fila_hoje.empty:
         nome_paciente = paciente.iloc[0]["Nome"]
         status = row["STATUS"].upper()
 
-        if status == "AGENDADO":
-            cor_status = "#FFD700"
-        elif status == "ATENDIDO":
-            cor_status = "#4CAF50"
-        elif status == "CANCELADO":
-            cor_status = "#F44336"
-        else:
-            cor_status = "#6c757d"
+        cor_status = {"AGENDADO":"#FFD700", "ATENDIDO":"#4CAF50", "CANCELADO":"#F44336"}.get(status, "#6c757d")
 
-        c1, c2, c3, c4 = st.sidebar.columns([2, 1, 1, 1])
+        c1, c2, c3, c4 = st.sidebar.columns([2,1,1,1])
         c1.markdown(f"<div style='font-size:13px'>{nome_paciente}</div>", unsafe_allow_html=True)
         c2.markdown(f"<div class='badge' style='background-color:{cor_status}; color:white'>{status}</div>", unsafe_allow_html=True)
 
@@ -161,32 +172,6 @@ if not fila_hoje.empty:
                 st.switch_page("pages/evolucao_tratamento.py")
 else:
     st.sidebar.info("⚠️ Nenhum paciente na fila hoje.")
-
-# ==========================
-# Função auxiliar para badge de status do paciente
-# ==========================
-def badge_status_paciente(status_valor: str) -> str:
-    if not status_valor:
-        return "<div class='badge' style='background-color:#6c757d; color:white'>-</div>"
-
-    status = str(status_valor).strip().upper()
-    if status == "SUSPENSO":
-        cor = "#FFD700"; txt = "black"
-    elif status == "ATIVO":
-        cor = "#28a745"; txt = "white"
-    elif status == "CANCELADO/FINALIZADO":
-        cor = "#dc3545"; txt = "white"
-    else:
-        cor = "#6c757d"; txt = "white"
-
-    return f"<div class='badge' style='background-color:{cor}; color:{txt}'>{status}</div>"
-
-def formatar_genero(genero, nome):
-    if genero.lower() == "masculino":
-        return f"<span style='color:blue;'>♂️ {nome}</span>"
-    elif genero.lower() == "feminino":
-        return f"<span style='color:deeppink;'>♀️ {nome}</span>"
-    return nome
 
 # ==========================
 # Lista de Pacientes
@@ -205,16 +190,13 @@ for idx, row in df_pacientes.iterrows():
     col = colunas[idx % 4]
     with col:
         with st.container():
-            genero_formatado = formatar_genero(row.get("Sexo", "-"), row.get("Nome", "-"))
-            badge_status = badge_status_paciente(row.get("Status", ""))  # 🔹 agora pega da aba Pacientes
-
             st.markdown(f"""
             <div class="card">
-                <b>{genero_formatado}</b><br>
-                🎂 <b>Idade:</b> {row.get("Idade", "-")} anos<br>
-                🧭 <b>FAO:</b> {row.get("Fao", "-")}<br>
-                💉 <b>Tipo de Fissura:</b> {row.get("Tipo_Fissura", "-")}<br>
-                📌 <b>Status:</b> {badge_status}
+                <b>{row.get('Nome', '-')}</b><br>
+                🎂 <b>Idade:</b> {row.get('Idade', '-')} anos<br>
+                🧭 <b>FAO:</b> {row.get('Fao', '-')}<br>
+                💉 <b>Tipo de Fissura:</b> {row.get('Tipo_Fissura', '-')}<br>
+                📌 <b>Status:</b> {row.get('Status', '-')}
             </div>
             """, unsafe_allow_html=True)
 
@@ -252,23 +234,34 @@ for idx, row in df_pacientes.iterrows():
                     add_page("1_🏠_home", "evolucao_tratamento")
                     st.switch_page("pages/evolucao_tratamento.py")
                 elif agendar:
-                    sheet_fila = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
-                    registros_fila = sheet_fila.get_all_records()
-                    df_fila_existente = pd.DataFrame(registros_fila)
+                    max_retries = 5
+                    delay_segundos = 1
+                    for attempt in range(max_retries):
+                        try:
+                            sheet_fila = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
+                            registros_fila = sheet_fila.get_all_records()
+                            df_fila_existente = pd.DataFrame(registros_fila)
+                            df_fila_existente["DATA"] = pd.to_datetime(df_fila_existente["DATA"], dayfirst=True, errors="coerce").dt.date
+                            
+                            ja_agendado = not df_fila_existente[
+                                (df_fila_existente["PACIENTE_ID"].astype(str) == id_str) &
+                                (df_fila_existente["DATA"] == date.today())
+                            ].empty
 
-                    df_fila_existente["DATA"] = pd.to_datetime(df_fila_existente["DATA"], dayfirst=True, errors="coerce").dt.date
-                    ja_agendado = not df_fila_existente[
-                        (df_fila_existente["PACIENTE_ID"].astype(str) == id_str) &
-                        (df_fila_existente["DATA"] == date.today())
-                    ].empty
-
-                    if ja_agendado:
-                        st.warning(f"⚠️ Paciente **{row.get('Nome')}** já está agendado para hoje.")
-                    else:
-                        nova_linha = [id_str, date.today().strftime("%d/%m/%Y"), "AGENDADO"]
-                        sheet_fila.append_row(nova_linha)
-                        st.success(f"✅ Paciente **{row.get('Nome')}** agendado para hoje.")
-                        st.experimental_rerun()
+                            if ja_agendado:
+                                st.warning(f"⚠️ Paciente **{row.get('Nome')}** já está agendado para hoje.")
+                            else:
+                                nova_linha = [id_str, date.today().strftime("%d/%m/%Y"), "AGENDADO"]
+                                sheet_fila.append_row(nova_linha)
+                                st.success(f"✅ Paciente **{row.get('Nome')}** agendado para hoje.")
+                                st.experimental_rerun()
+                            break
+                        except gspread.exceptions.APIError:
+                            st.warning(f"Erro ao atualizar Google Sheets (tentativa {attempt+1}/{max_retries}), aguardando {delay_segundos}s...")
+                            time.sleep(delay_segundos)
+                        except Exception as e:
+                            st.error(f"Erro inesperado: {e}")
+                            st.stop()
 
 st.markdown("---")
 st.caption(f"👥 Total de pacientes: **{len(df_pacientes)}**")
