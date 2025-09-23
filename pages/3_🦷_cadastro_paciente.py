@@ -27,17 +27,6 @@ def calcular_idade(data_nasc):
     hoje = datetime.date.today()
     return hoje.year - data_nasc.year - ((hoje.month, hoje.day) < (data_nasc.month, data_nasc.day))
 
-def resetar_formulario():
-    st.session_state.nome = ""
-    st.session_state.fao = ""
-    st.session_state.data = datetime.date(2000,1,1)
-    st.session_state.sexo = ""
-    st.session_state.filiacao = ""
-    st.session_state.endereco = ""
-    st.session_state.telefone = ""
-    st.session_state.tipo_fissura = ""
-    st.session_state.historia = ""
-
 # ------------------ Inicializar session_state ------------------
 campos = ["nome","fao","data","sexo","filiacao","endereco","telefone","tipo_fissura","historia"]
 for campo in campos:
@@ -49,6 +38,18 @@ for campo in campos:
 
 if "sucesso" not in st.session_state:
     st.session_state.sucesso = False
+
+if "limpar_form" not in st.session_state:
+    st.session_state.limpar_form = False
+
+# ------------------ Resetar formulário de forma segura ------------------
+if st.session_state.limpar_form:
+    for campo in campos:
+        if campo == "data":
+            st.session_state[campo] = datetime.date(2000,1,1)
+        else:
+            st.session_state[campo] = ""
+    st.session_state.limpar_form = False
 
 # ------------------ Formulário ------------------
 with st.form("include_paciente"):
@@ -102,9 +103,9 @@ if submit:
         ]
         planilha.append_row(nova_linha, value_input_option="USER_ENTERED")
 
-        # Limpar formulário e exibir sucesso
-        resetar_formulario()
+        # Acionar limpeza segura
         st.session_state.sucesso = True
+        st.session_state.limpar_form = True
         st.experimental_rerun()
 
 # ------------------ Mensagem de sucesso ------------------
