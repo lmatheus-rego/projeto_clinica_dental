@@ -6,7 +6,6 @@ import re
 
 st.set_page_config(page_title="Cadastro de Pacientes", page_icon="🦷", layout="wide")
 
-# 🔹 Título
 st.title("🦷 Cadastro de Pacientes")
 
 # ------------------ Google Sheets ------------------
@@ -28,11 +27,19 @@ def calcular_idade(data_nasc):
     hoje = datetime.date.today()
     return hoje.year - data_nasc.year - ((hoje.month, hoje.day) < (data_nasc.month, data_nasc.day))
 
-# ------------------ Inicializar session_state ------------------
-campos = ["nome","fao","data","sexo","filiacao","endereco","telefone","tipo_fissura","historia","sucesso"]
-if "sucesso" not in st.session_state:
-    st.session_state.sucesso = False
+def resetar_formulario():
+    st.session_state.nome = ""
+    st.session_state.fao = ""
+    st.session_state.data = datetime.date(2000,1,1)
+    st.session_state.sexo = ""
+    st.session_state.filiacao = ""
+    st.session_state.endereco = ""
+    st.session_state.telefone = ""
+    st.session_state.tipo_fissura = ""
+    st.session_state.historia = ""
 
+# ------------------ Inicializar session_state ------------------
+campos = ["nome","fao","data","sexo","filiacao","endereco","telefone","tipo_fissura","historia"]
 for campo in campos:
     if campo not in st.session_state:
         if campo == "data":
@@ -40,14 +47,8 @@ for campo in campos:
         else:
             st.session_state[campo] = ""
 
-# ------------------ Função para resetar formulário ------------------
-def resetar_formulario():
-    for campo in campos:
-        if campo == "data":
-            st.session_state[campo] = datetime.date(2000,1,1)
-        elif campo != "sucesso":
-            st.session_state[campo] = ""
-    st.session_state.sucesso = True
+if "sucesso" not in st.session_state:
+    st.session_state.sucesso = False
 
 # ------------------ Formulário ------------------
 with st.form("include_paciente"):
@@ -72,12 +73,7 @@ with st.form("include_paciente"):
         tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
         historia = st.text_area("História do Tratamento", key="historia")
 
-    submit = st.form_submit_button("💾 Salvar Paciente", on_click=resetar_formulario)
-
-# ------------------ Mensagem de sucesso ------------------
-if st.session_state.sucesso:
-    st.success("✅ Paciente cadastrado com sucesso!")
-    st.session_state.sucesso = False
+    submit = st.form_submit_button("💾 Salvar Paciente")
 
 # ------------------ Processamento ------------------
 if submit:
@@ -96,12 +92,22 @@ if submit:
     if erros:
         st.error(f"⚠️ Corrija os seguintes campos: {', '.join(erros)}")
     else:
+        # Salvar no Google Sheets
         planilha = conectar_planilha()
         novo_id = gerar_proximo_id(planilha)
         idade = calcular_idade(data_nasc)
-
         nova_linha = [
             str(novo_id), nome, idade, data_nasc.strftime("%d/%m/%Y"), sexo,
             filiacao, endereco, telefone, fao, tipo_fissura, historia, "Ativo"
         ]
         planilha.append_row(nova_linha, value_input_option="USER_ENTERED")
+
+        # Limpar formulário e exibir sucesso
+        resetar_formulario()
+        st.session_state.sucesso = True
+        st.experimental_rerun()
+
+# ------------------ Mensagem de sucesso ------------------
+if st.session_state.sucesso:
+    st.success("✅ Paciente cadastrado com sucesso!")
+    st.session_state.sucesso = False
