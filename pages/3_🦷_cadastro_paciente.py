@@ -28,7 +28,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🔹 Título simples
 st.title("🦷 Cadastro de Pacientes")
 
 # ------------------ Google Sheets ------------------
@@ -50,15 +49,17 @@ def calcular_idade(data_nasc):
     hoje = datetime.date.today()
     return hoje.year - data_nasc.year - ((hoje.month, hoje.day) < (data_nasc.month, data_nasc.day))
 
-def resetar_formulario():
-    for key in ["nome", "fao", "data", "sexo", "filiacao", "endereco", "telefone", "tipo_fissura", "historia"]:
-        if key in st.session_state:
-            del st.session_state[key]
+# ------------------ Inicializar Session State ------------------
+for key in ["nome", "fao", "data", "sexo", "filiacao", "endereco", "telefone", "tipo_fissura", "historia", "sucesso"]:
+    if key not in st.session_state:
+        if key == "data":
+            st.session_state[key] = datetime.date(2000,1,1)
+        elif key == "sucesso":
+            st.session_state[key] = False
+        else:
+            st.session_state[key] = ""
 
 # ------------------ Mensagem Sucesso ------------------
-if "sucesso" not in st.session_state:
-    st.session_state.sucesso = False
-
 if st.session_state.sucesso:
     st.success("✅ Paciente cadastrado com sucesso!")
     st.session_state.sucesso = False
@@ -71,12 +72,11 @@ with st.form("include_paciente"):
             nome = st.text_input("Nome *", key="nome")
             fao = st.text_input("FAO", placeholder="12345/67", key="fao")
             data_nasc = st.date_input("Data de Nascimento *", 
-                                      value=datetime.date(2000, 1, 1),
+                                      value=st.session_state.data,
                                       min_value=datetime.date(1900, 1, 1),
                                       max_value=datetime.date.today(),
                                       key="data", format="DD/MM/YYYY")
             sexo = st.selectbox("Sexo *", ["", "Masculino", "Feminino"], key="sexo")
-
         with col2:
             filiacao = st.text_input("Filiação", key="filiacao")
             endereco = st.text_input("Endereço", key="endereco")
@@ -98,15 +98,11 @@ if submit:
     if not sexo.strip():
         erros.append("Sexo")
 
-    # 🔹 Validação FAO
     if fao.strip() and not re.fullmatch(r"\d{5}/\d{2}", fao.strip()):
         erros.append("FAO inválido (use formato 12345/67)")
 
-    # 🔹 Validação Telefone
-    # 🔹 Validação Telefone
     if telefone.strip() and not re.fullmatch(r"(\(\d{2}\)\d{8,9}|\(\d{2}\)\d{5}-\d{4}|\d{11})", telefone.strip()):
-     erros.append("Telefone inválido (use formatos validos: 92999999999, (92)999999999, (92)99999-9999)")
-
+        erros.append("Telefone inválido (use formatos: 92999999999, (92)999999999, (92)99999-9999)")
 
     if erros:
         st.error(f"⚠️ Corrija os seguintes campos: {', '.join(erros)}")
@@ -121,6 +117,16 @@ if submit:
         ]
         planilha.append_row(nova_linha, value_input_option="USER_ENTERED")
 
-        resetar_formulario()
+        # Resetar formulário via session_state
+        st.session_state.nome = ""
+        st.session_state.fao = ""
+        st.session_state.data = datetime.date(2000,1,1)
+        st.session_state.sexo = ""
+        st.session_state.filiacao = ""
+        st.session_state.endereco = ""
+        st.session_state.telefone = ""
+        st.session_state.tipo_fissura = ""
+        st.session_state.historia = ""
         st.session_state.sucesso = True
-        st.rerun()
+
+        st.experimental_rerun()
