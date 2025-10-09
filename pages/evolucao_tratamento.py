@@ -66,7 +66,7 @@ if st.button("🔙 Voltar para lista de pacientes"):
 sh, aba_registros, aba_fila = carregar_planilhas()
 
 # ----------------- Captura ID Paciente -----------------
-id_paciente_str = st.query_params.get("idpaciente", [""])[0].strip()
+id_paciente_str = id_paciente_str = str(st.query_params.get("idpaciente", "")).strip()
 if not id_paciente_str:
     st.error("ID do paciente não encontrado.")
     st.stop()
