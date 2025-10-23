@@ -95,18 +95,49 @@ st.markdown("<h5 style='text-align:center;'>🩺 Dados Clínicos</h5><hr>", unsa
 col1, col2, col3, col4, col5 = st.columns([2,2,2,2,2])
 with col1:
     st.markdown(f"""<div style='text-align:center;'><strong>👤 Tipo de Fissura:</strong><br>{paciente_info.get('TIPO_FISSURA','')}</div>""", unsafe_allow_html=True)
-    st.markdown(f"<h8 style='text-align:center;'>👤Necessidades Cirúrgicas:<br> {paciente_info.get('NECES_CIRUR','')}</h8>", unsafe_allow_html=True)
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>🩺 Necessidades Cirúrgicas:</strong><br>
+        {paciente_info.get('NECES_CIRUR','')}
+    </div>""", unsafe_allow_html=True)
+
 with col2:
-    st.markdown(f"<h8 style='text-align:center;'>🧭História do Tratamento:<br> {paciente_info.get('HISTORIA_TRATAMENTO','')}</h8>", unsafe_allow_html=True)
-    st.markdown(f"<h8 style='text-align:center;'>👤Outros:<br> {paciente_info.get('OUTROS','')}</h8>", unsafe_allow_html=True)
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>📖 História do Tratamento:</strong><br>
+        {paciente_info.get('HISTORIA_TRATAMENTO','')}
+    </div>""", unsafe_allow_html=True)
+
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>🧩 Outros:</strong><br>
+        {paciente_info.get('OUTROS','')}
+    </div>""", unsafe_allow_html=True)
+
 with col3:
-    st.markdown(f"<h8 style='text-align:center;'>🎂Características Oclusais:<br> {paciente_info.get('CARAC_OCLUSAIS','')}</h8>", unsafe_allow_html=True)
-    st.markdown(f"<h8 style='text-align:center;'>👤Diagnóstico:<br> {paciente_info.get('DIAGNOSTICO','')}</h8>", unsafe_allow_html=True)
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>🦷 Características Oclusais:</strong><br>
+        {paciente_info.get('CARAC_OCLUSAIS','')}
+    </div>""", unsafe_allow_html=True)
+
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>🩻 Diagnóstico:</strong><br>
+        {paciente_info.get('DIAGNOSTICO','')}
+    </div>""", unsafe_allow_html=True)
+
 with col4:
-    st.markdown(f"<h8 style='text-align:center;'>👤Necessidades Odontológicas:<br> {paciente_info.get('NECES_ODONTO','')}</h8>", unsafe_allow_html=True)
-    st.markdown(f"<h8 style='text-align:center;'>👤Plano de Tratamento:<br> {paciente_info.get('PLANO_TRATAMENTO','')}</h8>", unsafe_allow_html=True)
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>🪥 Necessidades Odontológicas:</strong><br>
+        {paciente_info.get('NECES_ODONTO','')}
+    </div>""", unsafe_allow_html=True)
+
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>📋 Plano de Tratamento:</strong><br>
+        {paciente_info.get('PLANO_TRATAMENTO','')}
+    </div>""", unsafe_allow_html=True)
+
 with col5:
-    st.markdown(f"<h8 style='text-align:center;'>🎂Necessidades Ortodônticas:<br> {paciente_info.get('NECES_ORTO','')}</h8>", unsafe_allow_html=True)
+    st.markdown(f"""<div style='text-align:center;'>
+        <strong>😬 Necessidades Ortodônticas:</strong><br>
+        {paciente_info.get('NECES_ORTO','')}
+    </div>""", unsafe_allow_html=True)
 
 # ----------------- Evolução do Tratamento -----------------
 st.markdown("<h3 style='text-align:center;'>📈 Evolução do Tratamento</h3><hr>", unsafe_allow_html=True)
