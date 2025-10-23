@@ -66,7 +66,7 @@ if st.button("🔙 Voltar para lista de pacientes"):
 sh, aba_registros, aba_fila = carregar_planilhas()
 
 # ----------------- Captura ID Paciente -----------------
-id_paciente_str = id_paciente_str = str(st.query_params.get("idpaciente", "")).strip()
+id_paciente_str = str(st.query_params.get("idpaciente", "")).strip()
 if not id_paciente_str:
     st.error("ID do paciente não encontrado.")
     st.stop()
@@ -89,6 +89,18 @@ with col3:
     st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info.get('IDADE','')} anos</h5>", unsafe_allow_html=True)
 with col4:
     st.markdown(f"<h5 style='text-align:center; color:{status_color};'>{status_emoji}<br>Status: {paciente_info.get('STATUS','')}</h5>", unsafe_allow_html=True)
+
+# ----------------- Exibir Dados Clínicos -----------------
+st.markdown("<h3 style='text-align:center;'>🩺 Dados Clínicos</h3><hr>", unsafe_allow_html=True)
+campos_clinicos = ["TIPO_FISSURA","HISTORIA_TRATAMENTO","CARAC_OCLUSAIS",
+                   "NECES_ODONTO","NECES_ORTO","NECES_CIRUR","OUTROS",
+                   "DIAGNOSTICO","PLANO_TRATAMENTO"]
+
+colunas_layout = st.columns(2)
+for i, campo in enumerate(campos_clinicos):
+    valor = paciente_info.get(campo, "")
+    col = colunas_layout[i % 2]
+    col.markdown(f"**{campo.replace('_',' ')}:** {valor}")
 
 # ----------------- Evolução do Tratamento -----------------
 st.markdown("<h3 style='text-align:center;'>📈 Evolução do Tratamento</h3><hr>", unsafe_allow_html=True)
@@ -130,12 +142,10 @@ if st.button("💾 Salvar Evolução"):
                         st.success(f"✅ Status da fila atualizado para ATENDIDO")
                         break
 
-        
             st.experimental_rerun()
 
         except Exception as e:
             st.error(f"Erro ao salvar evolução: {e}")
-
 
 # ----------------- Histórico de Evoluções -----------------
 try:
