@@ -94,7 +94,8 @@ with col4:
 st.markdown("<h5 style='text-align:center;'>🩺 Dados Clínicos</h5><hr>", unsafe_allow_html=True)
 col1, col2, col3, col4, col5 = st.columns([2,2,2,2,2])
 with col1:
-    st.markdown(f"""<div style='text-align:center;'><strong>👤 Tipo de Fissura:</strong><br>{paciente_info.get('TIPO_FISSURA','')}</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div style='text-align:center;'><strong>👤 Tipo de Fissura:</strong><br>{paciente_info.get('TIPO_FISSURA','')}</div><br>""", unsafe_allow_html=True)
+    
     st.markdown(f"""<div style='text-align:center;'>
         <strong>🩺 Necessidades Cirúrgicas:</strong><br>
         {paciente_info.get('NECES_CIRUR','')}
@@ -104,7 +105,7 @@ with col2:
     st.markdown(f"""<div style='text-align:center;'>
         <strong>📖 História do Tratamento:</strong><br>
         {paciente_info.get('HISTORIA_TRATAMENTO','')}
-    </div>""", unsafe_allow_html=True)
+    </div><br>""", unsafe_allow_html=True)
 
     st.markdown(f"""<div style='text-align:center;'>
         <strong>🧩 Outros:</strong><br>
@@ -115,7 +116,7 @@ with col3:
     st.markdown(f"""<div style='text-align:center;'>
         <strong>🦷 Características Oclusais:</strong><br>
         {paciente_info.get('CARAC_OCLUSAIS','')}
-    </div>""", unsafe_allow_html=True)
+    </div><br>""", unsafe_allow_html=True)
 
     st.markdown(f"""<div style='text-align:center;'>
         <strong>🩻 Diagnóstico:</strong><br>
@@ -126,7 +127,7 @@ with col4:
     st.markdown(f"""<div style='text-align:center;'>
         <strong>🪥 Necessidades Odontológicas:</strong><br>
         {paciente_info.get('NECES_ODONTO','')}
-    </div>""", unsafe_allow_html=True)
+    </div><br>""", unsafe_allow_html=True)
 
     st.markdown(f"""<div style='text-align:center;'>
         <strong>📋 Plano de Tratamento:</strong><br>
@@ -137,7 +138,7 @@ with col5:
     st.markdown(f"""<div style='text-align:center;'>
         <strong>😬 Necessidades Ortodônticas:</strong><br>
         {paciente_info.get('NECES_ORTO','')}
-    </div>""", unsafe_allow_html=True)
+    </div><br>""", unsafe_allow_html=True)
 
 # ----------------- Evolução do Tratamento -----------------
 st.markdown("<h3 style='text-align:center;'>📈 Evolução do Tratamento</h3><hr>", unsafe_allow_html=True)
