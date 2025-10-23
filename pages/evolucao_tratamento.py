@@ -76,53 +76,53 @@ paciente_info = carregar_paciente(id_paciente_str, sh)
 
 # ----------------- Exibir Dados do Paciente -----------------
 st.markdown("<h3 style='text-align:center;'>📋 Dados do Paciente</h3><hr>", unsafe_allow_html=True)
-status = paciente_info.get('STATUS','').strip().lower()
-status_emoji = {"ativo": "✅", "inativo": "⛔", "ausente": "🕓"}.get(status, "❔")
-status_color = {"ativo": "#28a745", "inativo": "#6c757d", "ausente": "#ffc107"}.get(status, "#000")
+with st.expander("📋 Dados do Paciente", expanded=True):
+    status = paciente_info.get('STATUS','').strip().lower()
+    status_emoji = {"ativo": "✅", "inativo": "⛔", "ausente": "🕓"}.get(status, "❔")
+    status_color = {"ativo": "#28a745", "inativo": "#6c757d", "ausente": "#ffc107"}.get(status, "#000")
 
-espaco, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
-with col1:
-    st.markdown(f"<h5 style='text-align:center;'>👤<br>{paciente_info.get('NOME','')}</h5>", unsafe_allow_html=True)
-with col2:
-    st.markdown(f"<h5 style='text-align:center;'>🧭<br>FAO: {paciente_info.get('FAO','')}</h5>", unsafe_allow_html=True)
-with col3:
-    st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info.get('IDADE','')} anos</h5>", unsafe_allow_html=True)
-with col4:
-    st.markdown(f"<h5 style='text-align:center; color:{status_color};'>{status_emoji}<br>Status: {paciente_info.get('STATUS','')}</h5>", unsafe_allow_html=True)
+    espaco, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
+    with col1:
+        st.markdown(f"<h5 style='text-align:center;'>👤<br>{paciente_info.get('NOME','')}</h5>", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"<h5 style='text-align:center;'>🧭<br>FAO: {paciente_info.get('FAO','')}</h5>", unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"<h5 style='text-align:center;'>🎂<br>{paciente_info.get('IDADE','')} anos</h5>", unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"<h5 style='text-align:center; color:{status_color};'>{status_emoji}<br>Status: {paciente_info.get('STATUS','')}</h5>", unsafe_allow_html=True)
 
-# ----------------- Exibir Dados Clínicos -----------------
-st.markdown("<br><h4 style='text-align:center;'>🩺 Dados Clínicos</h4><hr>", unsafe_allow_html=True)
+    # ----------------- Exibir Dados Clínicos -----------------
+    st.markdown("<br><h4 style='text-align:center;'>🩺 Dados Clínicos</h4><hr>", unsafe_allow_html=True)
 
-espacao1, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
+    espaco1, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
 
-def mostrar_dado(label, valor):
-    """Retorna HTML formatado para um dado clínico com fallback."""
-    valor_exibido = valor.strip() if valor and str(valor).strip() else "-"
-    return f"<div style='text-align:center;'><strong>{label}</strong><br>{valor_exibido}</div>"
+    def mostrar_dado(label, valor):
+        """Retorna HTML formatado para um dado clínico com fallback."""
+        valor_exibido = valor.strip() if valor and str(valor).strip() else "Informação não cadastrada"
+        return f"<div style='text-align:center;'><strong>{label}</strong><br>{valor_exibido}</div>"
 
-with col1:
-    st.markdown(mostrar_dado("👤 Tipo de Fissura:", paciente_info.get('TIPO_FISSURA','')), unsafe_allow_html=True)
-    st.markdown(mostrar_dado("🩺 Necessidades Cirúrgicas:", paciente_info.get('NECES_CIRUR','')), unsafe_allow_html=True)
+    with col1:
+        st.markdown(mostrar_dado("👤 Tipo de Fissura:", paciente_info.get('TIPO_FISSURA','')), unsafe_allow_html=True)
+        st.markdown(mostrar_dado("🩺 Necessidades Cirúrgicas:", paciente_info.get('NECES_CIRUR','')), unsafe_allow_html=True)
 
-with col2:
+    with col2:
+        st.markdown(mostrar_dado("🧩 Outros:", paciente_info.get('OUTROS','')), unsafe_allow_html=True)
+        st.markdown(mostrar_dado("😬 Necessidades Ortodônticas:", paciente_info.get('NECES_ORTO','')), unsafe_allow_html=True)
 
-    st.markdown(mostrar_dado("🧩 Outros:", paciente_info.get('OUTROS','')), unsafe_allow_html=True)
-    st.markdown(mostrar_dado("😬 Necessidades Ortodônticas:", paciente_info.get('NECES_ORTO','')), unsafe_allow_html=True)
-with col3:
-    st.markdown(mostrar_dado("🦷 Características Oclusais:", paciente_info.get('CARAC_OCLUSAIS','')), unsafe_allow_html=True)
-    st.markdown(mostrar_dado("🩻 Diagnóstico:", paciente_info.get('DIAGNOSTICO','')), unsafe_allow_html=True)
+    with col3:
+        st.markdown(mostrar_dado("🦷 Características Oclusais:", paciente_info.get('CARAC_OCLUSAIS','')), unsafe_allow_html=True)
+        st.markdown(mostrar_dado("🩻 Diagnóstico:", paciente_info.get('DIAGNOSTICO','')), unsafe_allow_html=True)
 
-with col4:
-    st.markdown(mostrar_dado("🪥 Necessidades Odontológicas:", paciente_info.get('NECES_ODONTO','')), unsafe_allow_html=True)
-    st.markdown(mostrar_dado("📋 Plano de Tratamento:", paciente_info.get('PLANO_TRATAMENTO','')), unsafe_allow_html=True)
+    with col4:
+        st.markdown(mostrar_dado("🪥 Necessidades Odontológicas:", paciente_info.get('NECES_ODONTO','')), unsafe_allow_html=True)
+        st.markdown(mostrar_dado("📋 Plano de Tratamento:", paciente_info.get('PLANO_TRATAMENTO','')), unsafe_allow_html=True)
 
-st.markdown(f"""
-<div style='text-align:center;'>
-    <strong>📖 História do Tratamento:</strong><br>
-    {paciente_info.get('HISTORIA_TRATAMENTO','')}
-</div><br>
-""", unsafe_allow_html=True)
-
+    st.markdown(f"""
+    <div style='text-align:center;'>
+        <strong>📖 História do Tratamento:</strong><br>
+        {paciente_info.get('HISTORIA_TRATAMENTO','') or 'Informação não cadastrada'}
+    </div><br>
+    """, unsafe_allow_html=True)
 
 # ----------------- Evolução do Tratamento -----------------
 st.markdown("<h3 style='text-align:center;'>📈 Evolução do Tratamento</h3><hr>", unsafe_allow_html=True)
