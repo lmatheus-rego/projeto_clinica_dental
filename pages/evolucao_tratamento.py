@@ -93,12 +93,6 @@ with col4:
 # ----------------- Exibir Dados Clínicos -----------------
 st.markdown("<br><h4 style='text-align:center;'>🩺 Dados Clínicos</h4><hr>", unsafe_allow_html=True)
 
-st.markdown(f"""
-<div style='text-align:center;'>
-    <strong>📖 História do Tratamento:</strong><br>
-    {paciente_info.get('HISTORIA_TRATAMENTO','')}
-</div><br>
-""", unsafe_allow_html=True)
 espacao1, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
 
 def mostrar_dado(label, valor):
@@ -122,7 +116,12 @@ with col4:
     st.markdown(mostrar_dado("🪥 Necessidades Odontológicas:", paciente_info.get('NECES_ODONTO','')), unsafe_allow_html=True)
     st.markdown(mostrar_dado("📋 Plano de Tratamento:", paciente_info.get('PLANO_TRATAMENTO','')), unsafe_allow_html=True)
 
-    
+st.markdown(f"""
+<div style='text-align:center;'>
+    <strong>📖 História do Tratamento:</strong><br>
+    {paciente_info.get('HISTORIA_TRATAMENTO','')}
+</div><br>
+""", unsafe_allow_html=True)
 
 
 # ----------------- Evolução do Tratamento -----------------
