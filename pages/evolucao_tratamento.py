@@ -97,7 +97,7 @@ st.markdown(f"""
 <div style='text-align:center;'>
     <strong>📖 História do Tratamento:</strong><br>
     {paciente_info.get('HISTORIA_TRATAMENTO','')}
-</div>
+</div><br>
 """, unsafe_allow_html=True)
 espacao1, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
 
