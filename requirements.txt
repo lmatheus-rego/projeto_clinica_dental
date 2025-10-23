@@ -52,3 +52,5 @@ watchdog==4.0.0
 google-auth
 google-api-python-client
 gspread
+plotly
+
