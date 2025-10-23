@@ -148,8 +148,8 @@ total_pacientes = len(df_pacientes)
 atendidos_mes = len(df_registros)
 st.markdown("## 📊 Resumo Geral")
 col1, col2 = st.columns(2)
-col1.metric("👥 Total de Pacientes", value=total_pacientes)
-col2.metric("📆 Total de Registros", value=atendidos_mes)
+col1.metric("👥 Total de Pacientes Cadastrados no Projeto", value=total_pacientes)
+col2.metric("📆 Total de Registros de Evolução", value=atendidos_mes)
 
 # ==========================
 # Gráficos Históricos
@@ -161,10 +161,10 @@ colg1, colg2 = st.columns(2)
 # --- Gráfico 1: Faixa Etária ---
 with colg1:
     st.markdown("### 🧒 Faixa Etária dos Pacientes")
-    if "DATA_NASCIMENTO" in df_pacientes.columns:
-        df_pacientes["DATA_NASCIMENTO"] = pd.to_datetime(df_pacientes["DATA_NASCIMENTO"], errors="coerce", dayfirst=True)
+    if "DATA" in df_pacientes.columns:
+        df_pacientes["DATA"] = pd.to_datetime(df_pacientes["DATA"], errors="coerce", dayfirst=True)
         hoje = pd.Timestamp.today()
-        df_pacientes["IDADE"] = (hoje - df_pacientes["DATA_NASCIMENTO"]).dt.days // 365
+        df_pacientes["IDADE"] = (hoje - df_pacientes["DATA"]).dt.days // 365
         bins = [0, 9, 20, 29, 59, 200]
         labels = ["0-9 anos", "10-20 anos", "21-29 anos", "30-59 anos", "60 anos ou mais"]
         df_pacientes["FAIXA_ETARIA"] = pd.cut(df_pacientes["IDADE"], bins=bins, labels=labels, right=True)
