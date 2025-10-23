@@ -100,8 +100,6 @@ st.markdown("""
     padding: 0.8rem 1rem;
     margin-bottom: 1rem;
     transition: all 0.3s ease;
-    height: 180px; /* 🔹 altura fixa padrão */
-    display: flex;
     flex-direction: column;
 }
 .card:hover {
