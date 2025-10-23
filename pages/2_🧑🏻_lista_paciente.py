@@ -103,7 +103,7 @@ st.markdown("""
     height: 180px; /* 🔹 altura fixa padrão */
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* mantém o conteúdo centralizado e espaçado */
+    justify-content; /* mantém o conteúdo centralizado e espaçado */
     overflow: hidden; /* evita quebra ou estouro */
 }
 .card:hover {
