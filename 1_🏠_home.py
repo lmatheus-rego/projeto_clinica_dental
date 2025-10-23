@@ -8,7 +8,6 @@ from pathlib import Path
 import plotly.express as px
 from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
 
-
 # ==========================
 # Funções de páginas dinâmicas
 # ==========================
@@ -29,7 +28,6 @@ def add_page(main_script_path_str, page_name):
     }
     _on_pages_changed.send()
 
-
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
     for key, value in list(current_pages.items()):
@@ -37,7 +35,6 @@ def delete_page(main_script_path_str, page_name):
             del current_pages[key]
             break
     _on_pages_changed.send()
-
 
 # ==========================
 # Configuração inicial
@@ -52,12 +49,10 @@ delete_page("1_🏠_home", "alterar_paciente")
 delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
 delete_page("1_🏠_home", "evolucao_tratamento")
 
-
 # ==========================
 # Função para carregar dados do Google Sheets
 # ==========================
 def carregar_aba(nome_aba, tentativas=3, delay=3):
-    """Carrega uma aba do Google Sheets com tratamento de erro e delay."""
     for i in range(tentativas):
         try:
             scopes = [
@@ -81,7 +76,6 @@ def carregar_aba(nome_aba, tentativas=3, delay=3):
             else:
                 st.error(f"❌ Falha ao carregar '{nome_aba}': {e}")
                 return pd.DataFrame()
-
 
 # ==========================
 # Carregar dados
@@ -147,12 +141,10 @@ if not fila_hoje.empty:
 else:
     st.sidebar.info("⚠️ Nenhum paciente encontrado para hoje.")
 
-
 # ==========================
 # 📊 Resumo Geral
 # ==========================
 def pacientes_atendidos_mes(df_pacientes, df_registros):
-    """Conta pacientes atendidos no mês atual cruzando ID com Registros."""
     if df_registros.empty or "DATA_REGISTRO" not in df_registros.columns:
         return 0
 
@@ -167,7 +159,6 @@ def pacientes_atendidos_mes(df_pacientes, df_registros):
     pacientes_mes = df_pacientes[df_pacientes["ID"].astype(str).isin(ids_atendidos)]
     return len(pacientes_mes)
 
-
 total_pacientes = len(df_pacientes)
 atendidos_mes = pacientes_atendidos_mes(df_pacientes, df_registros)
 fissuras = df_pacientes["TIPO DE FISSURA"].value_counts().to_dict() if "TIPO DE FISSURA" in df_pacientes.columns else {}
@@ -178,11 +169,10 @@ col1.metric("👥 Total de Pacientes", value=total_pacientes)
 col2.metric("📆 Atendidos no Mês", value=atendidos_mes)
 col3.metric("💉 Tipos de Fissura", value=len(fissuras))
 
-
 # ==========================
-# 📈 Filtros e Gráficos
+# Gráficos Históricos
 # ==========================
-st.markdown("## 📈 Análises Interativas")
+st.markdown("## 📈 Gráficos Históricos")
 
 # Merge Pacientes + Registros
 if not df_registros.empty:
@@ -196,83 +186,36 @@ df_merged = pd.merge(
     suffixes=("_REG", "")
 )
 
-df_filtros = df_merged.copy()
-if "SEXO" in df_filtros.columns:
-    df_filtros["SEXO"] = df_filtros["SEXO"].astype(str).str.strip().str.capitalize()
-if "TIPO DE FISSURA" in df_filtros.columns:
-    df_filtros["TIPO DE FISSURA"] = df_filtros["TIPO DE FISSURA"].astype(str).str.strip()
-
-colf1, colf2, colf3 = st.columns(3)
-
-anos = sorted(df_filtros["DATA_REGISTRO"].dropna().dt.year.unique())
-ano = colf1.selectbox("Ano", ["Todos"] + [str(a) for a in anos], index=0)
-
-meses_map = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
-              7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
-meses = sorted(df_filtros["DATA_REGISTRO"].dropna().dt.month.unique())
-mes = colf2.selectbox("Mês", ["Todos"] + [meses_map[m] for m in meses], index=0)
-
-fissuras_lista = sorted(df_filtros["TIPO DE FISSURA"].dropna().unique())
-fissura = colf3.selectbox("Tipo de Fissura", ["Todos"] + fissuras_lista, index=0)
-
-# Aplicar filtros
-df_filtrado = df_filtros.copy()
-if ano != "Todos":
-    df_filtrado = df_filtrado[df_filtrado["DATA_REGISTRO"].dt.year == int(ano)]
-if mes != "Todos":
-    mes_num = [k for k, v in meses_map.items() if v == mes][0]
-    df_filtrado = df_filtrado[df_filtrado["DATA_REGISTRO"].dt.month == mes_num]
-if fissura != "Todos":
-    df_filtrado = df_filtrado[df_filtrado["TIPO DE FISSURA"] == fissura]
-
-# Contador total filtrado
-st.markdown(f"### 🔢 Total de pacientes atendidos no filtro: **{len(df_filtrado)}**")
-
-# Colunas para gráficos
-colg1, colg2 = st.columns(2)
+df_merged["SEXO"] = df_merged["SEXO"].astype(str).str.strip().str.capitalize() if "SEXO" in df_merged.columns else ""
+df_merged["TIPO DE FISSURA"] = df_merged["TIPO DE FISSURA"].astype(str).str.strip() if "TIPO DE FISSURA" in df_merged.columns else ""
 
 # --- Gráfico 1: Tipo de Fissura ---
-with colg1:
-    st.markdown("### 🦷 Por Tipo de Fissura")
-    if "TIPO DE FISSURA" in df_filtrado.columns:
-        df_fissura = df_filtrado["TIPO DE FISSURA"].value_counts().reset_index()
-        df_fissura.columns = ["Tipo de Fissura", "Quantidade"]
-        if not df_fissura.empty:
-            fig_fissura = px.bar(df_fissura, x="Tipo de Fissura", y="Quantidade", text="Quantidade",
-                                 title="Pacientes por Tipo de Fissura")
-            fig_fissura.update_traces(textposition="outside")
-            st.plotly_chart(fig_fissura, use_container_width=True)
-        else:
-            st.info("Nenhum dado encontrado para o filtro.")
-    else:
-        st.warning("Coluna 'TIPO DE FISSURA' não encontrada.")
+st.markdown("### 🦷 Pacientes por Tipo de Fissura")
+if "TIPO DE FISSURA" in df_merged.columns:
+    df_fissura = df_merged["TIPO DE FISSURA"].value_counts().reset_index()
+    df_fissura.columns = ["Tipo de Fissura", "Quantidade"]
+    if not df_fissura.empty:
+        fig_fissura = px.bar(df_fissura, x="Tipo de Fissura", y="Quantidade", text="Quantidade",
+                             title="Pacientes por Tipo de Fissura")
+        fig_fissura.update_traces(textposition="outside")
+        st.plotly_chart(fig_fissura, use_container_width=True)
 
 # --- Gráfico 2: Sexo ---
-with colg2:
-    st.markdown("### 👩‍🦰 Por Sexo")
-    if "SEXO" in df_filtrado.columns:
-        df_sexo = df_filtrado["SEXO"].value_counts().reset_index()
-        df_sexo.columns = ["Sexo", "Quantidade"]
-        if not df_sexo.empty:
-            fig_sexo = px.bar(df_sexo, x="Sexo", y="Quantidade", color="Sexo",
-                              text="Quantidade", title="Pacientes por Sexo")
-            fig_sexo.update_traces(textposition="outside")
-            st.plotly_chart(fig_sexo, use_container_width=True)
-        else:
-            st.info("Nenhum dado encontrado para o filtro.")
-    else:
-        st.warning("Coluna 'SEXO' não encontrada.")
+st.markdown("### 👩‍🦰 Pacientes por Sexo")
+if "SEXO" in df_merged.columns:
+    df_sexo = df_merged["SEXO"].value_counts().reset_index()
+    df_sexo.columns = ["Sexo", "Quantidade"]
+    if not df_sexo.empty:
+        fig_sexo = px.bar(df_sexo, x="Sexo", y="Quantidade", color="Sexo",
+                          text="Quantidade", title="Pacientes por Sexo")
+        fig_sexo.update_traces(textposition="outside")
+        st.plotly_chart(fig_sexo, use_container_width=True)
 
-# --- Gráfico 3: Pizza ---
-if not df_filtrado.empty and "TIPO DE FISSURA" in df_filtrado.columns:
-    st.markdown("### 🥧 Proporção de Fissuras (Gráfico de Pizza)")
-    fig_pizza = px.pie(df_filtrado, names="TIPO DE FISSURA", title="Proporção de Tipos de Fissura")
-    st.plotly_chart(fig_pizza, use_container_width=True)
-
-# --- Gráfico 4: Linha Temporal de Atendimentos ---
-if not df_filtrado.empty:
-    st.markdown("### 📈 Atendimentos ao Longo do Tempo")
-    df_tempo = df_filtrado.copy()
+# --- Gráfico 3: Linha Temporal de Atendimentos ---
+st.markdown("### 📈 Atendimentos ao Longo do Tempo")
+if not df_merged.empty:
+    df_tempo = df_merged.copy()
+    df_tempo = df_tempo.dropna(subset=["DATA_REGISTRO"])
     df_tempo["AnoMes"] = df_tempo["DATA_REGISTRO"].dt.to_period("M").astype(str)
     df_tempo_contagem = df_tempo.groupby("AnoMes")["PACIENTE_ID"].nunique().reset_index()
     df_tempo_contagem.columns = ["Ano-Mês", "Pacientes Atendidos"]
