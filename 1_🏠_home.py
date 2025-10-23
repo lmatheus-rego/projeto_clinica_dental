@@ -145,37 +145,45 @@ else:
 # 📊 Resumo Geral
 # ==========================
 total_pacientes = len(df_pacientes)
-atendidos_mes = len(df_registros)  # simplificado
-fissuras = df_pacientes["TIPO DE FISSURA"].value_counts().to_dict() if "TIPO DE FISSURA" in df_pacientes.columns else {}
-
+atendidos_mes = len(df_registros)
 st.markdown("## 📊 Resumo Geral")
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 col1.metric("👥 Total de Pacientes", value=total_pacientes)
 col2.metric("📆 Total de Registros", value=atendidos_mes)
-col3.metric("💉 Tipos de Fissura", value=len(fissuras))
 
 # ==========================
 # Gráficos Históricos
 # ==========================
 st.markdown("## 📈 Gráficos Históricos")
 
-# --- Gráfico 1: Tipo de Fissura ---
-st.markdown("### 🦷 Pacientes por Tipo de Fissura")
-if "TIPO DE FISSURA" in df_pacientes.columns:
-    df_fissura = df_pacientes["TIPO DE FISSURA"].value_counts().reset_index()
-    df_fissura.columns = ["Tipo de Fissura", "Quantidade"]
-    fig_fissura = px.bar(df_fissura, x="Tipo de Fissura", y="Quantidade", text="Quantidade",
-                         title="Pacientes por Tipo de Fissura")
-    fig_fissura.update_traces(textposition="outside")
-    st.plotly_chart(fig_fissura, use_container_width=True)
+colg1, colg2 = st.columns(2)
 
-# --- Gráfico 2: Sexo (Pizza) ---
-st.markdown("### 👩‍🦰 Pacientes por Sexo")
-if "SEXO" in df_pacientes.columns:
-    df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
-    df_sexo.columns = ["Sexo", "Quantidade"]
-    fig_sexo = px.pie(df_sexo, names="Sexo", values="Quantidade", title="Distribuição de Pacientes por Sexo")
-    st.plotly_chart(fig_sexo, use_container_width=True)
+# --- Gráfico 1: Faixa Etária ---
+with colg1:
+    st.markdown("### 🧒 Faixa Etária dos Pacientes")
+    if "DATA_NASCIMENTO" in df_pacientes.columns:
+        df_pacientes["DATA_NASCIMENTO"] = pd.to_datetime(df_pacientes["DATA_NASCIMENTO"], errors="coerce", dayfirst=True)
+        hoje = pd.Timestamp.today()
+        df_pacientes["IDADE"] = (hoje - df_pacientes["DATA_NASCIMENTO"]).dt.days // 365
+        bins = [0, 9, 20, 29, 59, 200]
+        labels = ["0-9 anos", "10-20 anos", "21-29 anos", "30-59 anos", "60 anos ou mais"]
+        df_pacientes["FAIXA_ETARIA"] = pd.cut(df_pacientes["IDADE"], bins=bins, labels=labels, right=True)
+        df_idade = df_pacientes["FAIXA_ETARIA"].value_counts().reset_index()
+        df_idade.columns = ["Faixa Etária", "Quantidade"]
+        fig_idade = px.pie(df_idade, names="Faixa Etária", values="Quantidade", title="Distribuição por Faixa Etária")
+        st.plotly_chart(fig_idade, use_container_width=True)
+
+# --- Gráfico 2: Sexo (Pizza Pastel) ---
+with colg2:
+    st.markdown("### 👩‍🦰 Pacientes por Sexo")
+    if "SEXO" in df_pacientes.columns:
+        df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
+        df_sexo.columns = ["Sexo", "Quantidade"]
+        cores = {"Masculino": "#85C1E9", "Feminino": "#F5B7B1"}
+        df_sexo["Cor"] = df_sexo["Sexo"].map(cores)
+        fig_sexo = px.pie(df_sexo, names="Sexo", values="Quantidade", title="Distribuição por Sexo", color="Sexo",
+                          color_discrete_map=cores)
+        st.plotly_chart(fig_sexo, use_container_width=True)
 
 # --- Gráfico 3: Linha Temporal de Atendimentos ---
 st.markdown("### 📈 Atendimentos ao Longo do Tempo")
@@ -183,9 +191,19 @@ if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
     df_registros["DATA_REGISTRO"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
     df_tempo = df_registros.dropna(subset=["DATA_REGISTRO"]).copy()
     df_tempo["AnoMes"] = df_tempo["DATA_REGISTRO"].dt.to_period("M").astype(str)
+    
+    # Gerar todos os meses entre o primeiro e último registro
+    periodo = pd.period_range(df_tempo["DATA_REGISTRO"].min().to_period("M"),
+                              df_tempo["DATA_REGISTRO"].max().to_period("M"), freq="M")
+    df_periodo = pd.DataFrame({"Ano-Mês": periodo.astype(str)})
+    
     df_tempo_contagem = df_tempo.groupby("AnoMes")["PACIENTE_ID"].nunique().reset_index()
     df_tempo_contagem.columns = ["Ano-Mês", "Pacientes Atendidos"]
-    fig_tempo = px.line(df_tempo_contagem, x="Ano-Mês", y="Pacientes Atendidos",
+    
+    df_tempo_completo = pd.merge(df_periodo, df_tempo_contagem, left_on="Ano-Mês", right_on="Ano-Mês", how="left")
+    df_tempo_completo["Pacientes Atendidos"] = df_tempo_completo["Pacientes Atendidos"].fillna(0)
+    
+    fig_tempo = px.line(df_tempo_completo, x="Ano-Mês", y="Pacientes Atendidos",
                         markers=True, title="Pacientes Atendidos por Mês")
-    fig_tempo.update_yaxes(range=[0, df_tempo_contagem["Pacientes Atendidos"].max() + 1])
+    fig_tempo.update_yaxes(range=[0, df_tempo_completo["Pacientes Atendidos"].max() + 1])
     st.plotly_chart(fig_tempo, use_container_width=True)
