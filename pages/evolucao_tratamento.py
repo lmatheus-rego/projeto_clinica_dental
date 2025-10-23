@@ -75,8 +75,8 @@ if not id_paciente_str:
 paciente_info = carregar_paciente(id_paciente_str, sh)
 
 # ----------------- Exibir Dados do Paciente -----------------
-st.markdown("<h3 style='text-align:center;'>📋Cadastro de Evolução: </h3><hr>", unsafe_allow_html=True)
-with st.expander("⬇️ Dados do Paciente ⬇️ ", expanded=False):
+st.markdown("<h3 style='text-align:center;'>📋Cadastro de Evolução: </h3><hr><br>", unsafe_allow_html=True)
+with st.expander(f"⬇️ Dados do Paciente ⬇️  |  {paciente_info.get('NOME', 'Nome não cadastrado')}", expanded=False):
     status = paciente_info.get('STATUS','').strip().lower()
     status_emoji = {"ativo": "✅", "inativo": "⛔", "ausente": "🕓"}.get(status, "❔")
     status_color = {"ativo": "#28a745", "inativo": "#6c757d", "ausente": "#ffc107"}.get(status, "#000")
