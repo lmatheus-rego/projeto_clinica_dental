@@ -86,6 +86,7 @@ def carregar_aba(nome_aba, tentativas=3, delay=3):
 # ==========================
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
+df_registros = carregar_aba("Registros")
 
 # ==========================
 # 📋 Fila de Atendimento - Hoje
@@ -146,12 +147,12 @@ else:
 # 📊 Resumo Geral
 # ==========================
 def pacientes_do_mes(df):
-    if "DATA DE ATENDIMENTO" not in df.columns:
+    if "DATA_REGISTRO" not in df_registros.columns:
         return 0
-    df["DATA DE ATENDIMENTO"] = pd.to_datetime(df["DATA DE ATENDIMENTO"], errors='coerce')
+    df["ID"] = df_registros["ID_PACIENTE"], errors='coerce'
     hoje = datetime.datetime.now()
-    return df[(df["DATA DE ATENDIMENTO"].dt.month == hoje.month) &
-              (df["DATA DE ATENDIMENTO"].dt.year == hoje.year)].shape[0]
+    return df[(df_registros["DATA_REGISTRO"].dt.month == hoje.month) &
+              (df_registros["DATA_REGISTRO"].dt.year == hoje.year)].shape[0]
 
 
 total_pacientes = len(df_pacientes)
