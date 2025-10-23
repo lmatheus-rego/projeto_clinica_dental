@@ -91,16 +91,16 @@ with col4:
     st.markdown(f"<h5 style='text-align:center; color:{status_color};'>{status_emoji}<br>Status: {paciente_info.get('STATUS','')}</h5>", unsafe_allow_html=True)
 
 # ----------------- Exibir Dados Clínicos -----------------
-st.markdown("<h3 style='text-align:center;'>🩺 Dados Clínicos</h3><hr>", unsafe_allow_html=True)
+st.markdown("<h5 style='text-align:center;'>🩺 Dados Clínicos</h5><hr>", unsafe_allow_html=True)
 espaco, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
 with col1:
-    st.markdown(f"<h5 style='text-align:center;'>👤<br>Tipo de Fissura: {paciente_info.get('TIPO_FISSURA','')}</h5>", unsafe_allow_html=True)
+    st.markdown(f"<h8 style='text-align:center;'>👤<br>Tipo de Fissura: {paciente_info.get('TIPO_FISSURA','')}</h8>", unsafe_allow_html=True)
 with col2:
-    st.markdown(f"<h5 style='text-align:center;'>🧭<br>História do Tratamento: {paciente_info.get('HISTORIA_TRATAMENTO','')}</h5>", unsafe_allow_html=True)
+    st.markdown(f"<h8 style='text-align:center;'>🧭<br>História do Tratamento: {paciente_info.get('HISTORIA_TRATAMENTO','')}</h8>", unsafe_allow_html=True)
 with col3:
-    st.markdown(f"<h5 style='text-align:center;'>🎂<br>Características Oclusais: {paciente_info.get('CARAC_OCLUSAIS','')} anos</h5>", unsafe_allow_html=True)
+    st.markdown(f"<h8 style='text-align:center;'>🎂<br>Características Oclusais: {paciente_info.get('CARAC_OCLUSAIS','')} anos</h8>", unsafe_allow_html=True)
 with col4:
-    st.markdown(f"<h5 style='text-align:center;  <br>Necessidades Odontológicas: {paciente_info.get('NECES_ODONTO','')}</h5>", unsafe_allow_html=True)
+    st.markdown(f"<h8 style='text-align:center;  <br>Necessidades Odontológicas: {paciente_info.get('NECES_ODONTO','')}</h8>", unsafe_allow_html=True)
 
 campos_clinicos = ["TIPO_FISSURA","HISTORIA_TRATAMENTO","CARAC_OCLUSAIS",
                    "NECES_ODONTO","NECES_ORTO","NECES_CIRUR","OUTROS",
