@@ -92,7 +92,9 @@ with col4:
 
 # ----------------- Exibir Dados Clínicos -----------------
 st.markdown("<br><h4 style='text-align:center;'>🩺 Dados Clínicos</h4><hr>", unsafe_allow_html=True)
-col1, col2, col3, col4, col5 = st.columns([2,2,2,2,2])
+
+st.markdown("📖 História do Tratamento:", paciente_info.get('HISTORIA_TRATAMENTO','')), unsafe_allow_html=True)
+espacao1, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
 
 def mostrar_dado(label, valor):
     """Retorna HTML formatado para um dado clínico com fallback."""
@@ -104,9 +106,9 @@ with col1:
     st.markdown(mostrar_dado("🩺 Necessidades Cirúrgicas:", paciente_info.get('NECES_CIRUR','')), unsafe_allow_html=True)
 
 with col2:
-    st.markdown(mostrar_dado("📖 História do Tratamento:", paciente_info.get('HISTORIA_TRATAMENTO','')), unsafe_allow_html=True)
-    st.markdown(mostrar_dado("🧩 Outros:", paciente_info.get('OUTROS','')), unsafe_allow_html=True)
 
+    st.markdown(mostrar_dado("🧩 Outros:", paciente_info.get('OUTROS','')), unsafe_allow_html=True)
+    st.markdown(mostrar_dado("😬 Necessidades Ortodônticas:", paciente_info.get('NECES_ORTO','')), unsafe_allow_html=True)
 with col3:
     st.markdown(mostrar_dado("🦷 Características Oclusais:", paciente_info.get('CARAC_OCLUSAIS','')), unsafe_allow_html=True)
     st.markdown(mostrar_dado("🩻 Diagnóstico:", paciente_info.get('DIAGNOSTICO','')), unsafe_allow_html=True)
@@ -115,8 +117,7 @@ with col4:
     st.markdown(mostrar_dado("🪥 Necessidades Odontológicas:", paciente_info.get('NECES_ODONTO','')), unsafe_allow_html=True)
     st.markdown(mostrar_dado("📋 Plano de Tratamento:", paciente_info.get('PLANO_TRATAMENTO','')), unsafe_allow_html=True)
 
-with col5:
-    st.markdown(mostrar_dado("😬 Necessidades Ortodônticas:", paciente_info.get('NECES_ORTO','')), unsafe_allow_html=True)
+    
 
 
 # ----------------- Evolução do Tratamento -----------------
