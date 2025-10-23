@@ -159,7 +159,7 @@ colg1, colg2 = st.columns(2)
 
 # --- Gráfico 1: Faixa Etária ---
 with colg1:
-    st.markdown("### 🧒 Faixa Etária dos Pacientes")
+    st.markdown("### 🧒🏾👴🏻 Faixa Etária dos Pacientes")
     if "DATA" in df_pacientes.columns:
         df_pacientes["DATA"] = pd.to_datetime(df_pacientes["DATA"], errors="coerce", dayfirst=True)
         hoje = pd.Timestamp.today()
@@ -180,7 +180,7 @@ with colg1:
 
 # --- Gráfico 2: Sexo (Pizza Pastel) ---
 with colg2:
-    st.markdown("### 👩‍🦰 Pacientes por Sexo")
+    st.markdown("###♂️♀️ Pacientes por Sexo")
     if "SEXO" in df_pacientes.columns:
         df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
         df_sexo.columns = ["Sexo", "Quantidade"]
