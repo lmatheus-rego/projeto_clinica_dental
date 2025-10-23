@@ -155,7 +155,6 @@ col2.metric("📆 Total de Registros de Evolução", value=atendidos_mes)
 # Gráficos Históricos
 # ==========================
 st.markdown("## 📈 Gráficos Históricos")
-
 colg1, colg2 = st.columns(2)
 
 # --- Gráfico 1: Faixa Etária ---
@@ -170,8 +169,14 @@ with colg1:
         df_pacientes["FAIXA_ETARIA"] = pd.cut(df_pacientes["IDADE"], bins=bins, labels=labels, right=True)
         df_idade = df_pacientes["FAIXA_ETARIA"].value_counts().reset_index()
         df_idade.columns = ["Faixa Etária", "Quantidade"]
-        fig_idade = px.pie(df_idade, names="Faixa Etária", values="Quantidade", title="Distribuição por Faixa Etária")
-        st.plotly_chart(fig_idade, use_container_width=True)
+        df_idade = df_idade.sort_values("Faixa Etária")  # ordena legenda alfabeticamente
+        fig_idade = px.pie(df_idade, names="Faixa Etária", values="Quantidade",
+                           title="Distribuição por Faixa Etária")
+        fig_idade.update_traces(textposition='inside', hole=0.4)
+        fig_idade.update_layout(margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor="white",
+                                plot_bgcolor="white", legend_title_text="Faixa Etária",
+                                legend=dict(traceorder="normal", font=dict(size=12)))
+        st.plotly_chart(fig_idade, use_container_width=True, config={"displayModeBar": False})
 
 # --- Gráfico 2: Sexo (Pizza Pastel) ---
 with colg2:
@@ -181,9 +186,12 @@ with colg2:
         df_sexo.columns = ["Sexo", "Quantidade"]
         cores = {"Masculino": "#85C1E9", "Feminino": "#F5B7B1"}
         df_sexo["Cor"] = df_sexo["Sexo"].map(cores)
-        fig_sexo = px.pie(df_sexo, names="Sexo", values="Quantidade", title="Distribuição por Sexo", color="Sexo",
-                          color_discrete_map=cores)
-        st.plotly_chart(fig_sexo, use_container_width=True)
+        fig_sexo = px.pie(df_sexo, names="Sexo", values="Quantidade", color="Sexo",
+                          color_discrete_map=cores, title="Distribuição por Sexo")
+        fig_sexo.update_traces(textposition='inside', hole=0.4)
+        fig_sexo.update_layout(margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor="white",
+                               plot_bgcolor="white", legend_title_text="Sexo")
+        st.plotly_chart(fig_sexo, use_container_width=True, config={"displayModeBar": False})
 
 # --- Gráfico 3: Linha Temporal de Atendimentos ---
 st.markdown("### 📈 Atendimentos ao Longo do Tempo")
@@ -191,19 +199,21 @@ if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
     df_registros["DATA_REGISTRO"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
     df_tempo = df_registros.dropna(subset=["DATA_REGISTRO"]).copy()
     df_tempo["AnoMes"] = df_tempo["DATA_REGISTRO"].dt.to_period("M").astype(str)
-    
-    # Gerar todos os meses entre o primeiro e último registro
+
+    # Todos os meses do período
     periodo = pd.period_range(df_tempo["DATA_REGISTRO"].min().to_period("M"),
                               df_tempo["DATA_REGISTRO"].max().to_period("M"), freq="M")
     df_periodo = pd.DataFrame({"Ano-Mês": periodo.astype(str)})
-    
+
     df_tempo_contagem = df_tempo.groupby("AnoMes")["PACIENTE_ID"].nunique().reset_index()
     df_tempo_contagem.columns = ["Ano-Mês", "Pacientes Atendidos"]
-    
-    df_tempo_completo = pd.merge(df_periodo, df_tempo_contagem, left_on="Ano-Mês", right_on="Ano-Mês", how="left")
+
+    df_tempo_completo = pd.merge(df_periodo, df_tempo_contagem, on="Ano-Mês", how="left")
     df_tempo_completo["Pacientes Atendidos"] = df_tempo_completo["Pacientes Atendidos"].fillna(0)
-    
+
     fig_tempo = px.line(df_tempo_completo, x="Ano-Mês", y="Pacientes Atendidos",
                         markers=True, title="Pacientes Atendidos por Mês")
     fig_tempo.update_yaxes(range=[0, df_tempo_completo["Pacientes Atendidos"].max() + 1])
-    st.plotly_chart(fig_tempo, use_container_width=True)
+    fig_tempo.update_layout(margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor="white",
+                            plot_bgcolor="white")
+    st.plotly_chart(fig_tempo, use_container_width=True, config={"displayModeBar": False})
