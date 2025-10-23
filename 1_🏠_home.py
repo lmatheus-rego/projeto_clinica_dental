@@ -180,7 +180,7 @@ with colg1:
 
 # --- Gráfico 2: Sexo (Pizza Pastel) ---
 with colg2:
-    st.markdown("###♂️♀️ Pacientes por Sexo")
+    st.markdown("### ♂️♀️ Pacientes por Sexo")
     if "SEXO" in df_pacientes.columns:
         df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
         df_sexo.columns = ["Sexo", "Quantidade"]
