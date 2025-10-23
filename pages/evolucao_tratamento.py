@@ -92,15 +92,20 @@ with col4:
 
 # ----------------- Exibir Dados Clínicos -----------------
 st.markdown("<h3 style='text-align:center;'>🩺 Dados Clínicos</h3><hr>", unsafe_allow_html=True)
+espaco, col1, col2, col3, col4, espaco2 = st.columns([1,2,2,2,2,1])
+with col1:
+    st.markdown(f"<h5 style='text-align:center;'>👤<br>Tipo de Fissura: {paciente_info.get('TIPO_FISSURA','')}</h5>", unsafe_allow_html=True)
+with col2:
+    st.markdown(f"<h5 style='text-align:center;'>🧭<br>História do Tratamento: {paciente_info.get('HISTORIA_TRATAMENTO','')}</h5>", unsafe_allow_html=True)
+with col3:
+    st.markdown(f"<h5 style='text-align:center;'>🎂<br>Características Oclusais: {paciente_info.get('CARAC_OCLUSAIS','')} anos</h5>", unsafe_allow_html=True)
+with col4:
+    st.markdown(f"<h5 style='text-align:center;  <br>Necessidades Odontológicas: {paciente_info.get('NECES_ODONTO','')}</h5>", unsafe_allow_html=True)
+
 campos_clinicos = ["TIPO_FISSURA","HISTORIA_TRATAMENTO","CARAC_OCLUSAIS",
                    "NECES_ODONTO","NECES_ORTO","NECES_CIRUR","OUTROS",
                    "DIAGNOSTICO","PLANO_TRATAMENTO"]
 
-colunas_layout = st.columns(2)
-for i, campo in enumerate(campos_clinicos):
-    valor = paciente_info.get(campo, "")
-    col = colunas_layout[i % 2]
-    col.markdown(f"**{campo.replace('_',' ')}:** {valor}")
 
 # ----------------- Evolução do Tratamento -----------------
 st.markdown("<h3 style='text-align:center;'>📈 Evolução do Tratamento</h3><hr>", unsafe_allow_html=True)
