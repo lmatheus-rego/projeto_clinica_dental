@@ -100,7 +100,7 @@ st.markdown("""
     padding: 0.8rem 1rem;
     margin-bottom: 1rem;
     transition: all 0.3s ease;
-    height: 210px; /* 🔹 altura fixa padrão */
+    height: 180px; /* 🔹 altura fixa padrão */
     display: flex;
     flex-direction: column;
     justify-content: space-between; /* mantém o conteúdo centralizado e espaçado */
