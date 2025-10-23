@@ -94,7 +94,7 @@ with col4:
 st.markdown("<h5 style='text-align:center;'>🩺 Dados Clínicos</h5><hr>", unsafe_allow_html=True)
 col1, col2, col3, col4, col5 = st.columns([2,2,2,2,2])
 with col1:
-    st.markdown(f"<h8 style='text-align:center;'>👤Tipo de Fissura:</h8><br> {paciente_info.get('TIPO_FISSURA','')}", unsafe_allow_html=True)
+    st.markdown(f"<h8 style='text-align:center;'>👤Tipo de Fissura:</h8><br>(f"<h10 style='text-align:center;'> {paciente_info.get('TIPO_FISSURA','')}"</h9>, unsafe_allow_html=True)
     st.markdown(f"<h8 style='text-align:center;'>👤Necessidades Cirúrgicas:<br> {paciente_info.get('NECES_CIRUR','')}</h8>", unsafe_allow_html=True)
 with col2:
     st.markdown(f"<h8 style='text-align:center;'>🧭História do Tratamento:<br> {paciente_info.get('HISTORIA_TRATAMENTO','')}</h8>", unsafe_allow_html=True)
