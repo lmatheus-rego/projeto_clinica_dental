@@ -144,29 +144,14 @@ else:
 # ==========================
 # 📊 Resumo Geral
 # ==========================
-def pacientes_atendidos_mes(df_pacientes, df_registros):
-    if df_registros.empty or "DATA_REGISTRO" not in df_registros.columns:
-        return 0
-
-    df_registros["DATA_REGISTRO"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
-    hoje = datetime.date.today()
-    registros_mes = df_registros[
-        (df_registros["DATA_REGISTRO"].dt.month == hoje.month) &
-        (df_registros["DATA_REGISTRO"].dt.year == hoje.year)
-    ]
-
-    ids_atendidos = registros_mes["PACIENTE_ID"].astype(str).unique()
-    pacientes_mes = df_pacientes[df_pacientes["ID"].astype(str).isin(ids_atendidos)]
-    return len(pacientes_mes)
-
 total_pacientes = len(df_pacientes)
-atendidos_mes = pacientes_atendidos_mes(df_pacientes, df_registros)
+atendidos_mes = len(df_registros)  # simplificado
 fissuras = df_pacientes["TIPO DE FISSURA"].value_counts().to_dict() if "TIPO DE FISSURA" in df_pacientes.columns else {}
 
 st.markdown("## 📊 Resumo Geral")
 col1, col2, col3 = st.columns(3)
 col1.metric("👥 Total de Pacientes", value=total_pacientes)
-col2.metric("📆 Atendidos no Mês", value=atendidos_mes)
+col2.metric("📆 Total de Registros", value=atendidos_mes)
 col3.metric("💉 Tipos de Fissura", value=len(fissuras))
 
 # ==========================
@@ -174,51 +159,33 @@ col3.metric("💉 Tipos de Fissura", value=len(fissuras))
 # ==========================
 st.markdown("## 📈 Gráficos Históricos")
 
-# Merge Pacientes + Registros
-if not df_registros.empty:
-    df_registros["DATA_REGISTRO"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
-df_merged = pd.merge(
-    df_registros,
-    df_pacientes,
-    left_on="PACIENTE_ID",
-    right_on="ID",
-    how="left",
-    suffixes=("_REG", "")
-)
-
-df_merged["SEXO"] = df_merged["SEXO"].astype(str).str.strip().str.capitalize() if "SEXO" in df_merged.columns else ""
-df_merged["TIPO DE FISSURA"] = df_merged["TIPO DE FISSURA"].astype(str).str.strip() if "TIPO DE FISSURA" in df_merged.columns else ""
-
 # --- Gráfico 1: Tipo de Fissura ---
 st.markdown("### 🦷 Pacientes por Tipo de Fissura")
-if "TIPO DE FISSURA" in df_merged.columns:
-    df_fissura = df_merged["TIPO DE FISSURA"].value_counts().reset_index()
+if "TIPO DE FISSURA" in df_pacientes.columns:
+    df_fissura = df_pacientes["TIPO DE FISSURA"].value_counts().reset_index()
     df_fissura.columns = ["Tipo de Fissura", "Quantidade"]
-    if not df_fissura.empty:
-        fig_fissura = px.bar(df_fissura, x="Tipo de Fissura", y="Quantidade", text="Quantidade",
-                             title="Pacientes por Tipo de Fissura")
-        fig_fissura.update_traces(textposition="outside")
-        st.plotly_chart(fig_fissura, use_container_width=True)
+    fig_fissura = px.bar(df_fissura, x="Tipo de Fissura", y="Quantidade", text="Quantidade",
+                         title="Pacientes por Tipo de Fissura")
+    fig_fissura.update_traces(textposition="outside")
+    st.plotly_chart(fig_fissura, use_container_width=True)
 
-# --- Gráfico 2: Sexo ---
+# --- Gráfico 2: Sexo (Pizza) ---
 st.markdown("### 👩‍🦰 Pacientes por Sexo")
-if "SEXO" in df_merged.columns:
-    df_sexo = df_merged["SEXO"].value_counts().reset_index()
+if "SEXO" in df_pacientes.columns:
+    df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
     df_sexo.columns = ["Sexo", "Quantidade"]
-    if not df_sexo.empty:
-        fig_sexo = px.bar(df_sexo, x="Sexo", y="Quantidade", color="Sexo",
-                          text="Quantidade", title="Pacientes por Sexo")
-        fig_sexo.update_traces(textposition="outside")
-        st.plotly_chart(fig_sexo, use_container_width=True)
+    fig_sexo = px.pie(df_sexo, names="Sexo", values="Quantidade", title="Distribuição de Pacientes por Sexo")
+    st.plotly_chart(fig_sexo, use_container_width=True)
 
 # --- Gráfico 3: Linha Temporal de Atendimentos ---
 st.markdown("### 📈 Atendimentos ao Longo do Tempo")
-if not df_merged.empty:
-    df_tempo = df_merged.copy()
-    df_tempo = df_tempo.dropna(subset=["DATA_REGISTRO"])
+if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
+    df_registros["DATA_REGISTRO"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
+    df_tempo = df_registros.dropna(subset=["DATA_REGISTRO"]).copy()
     df_tempo["AnoMes"] = df_tempo["DATA_REGISTRO"].dt.to_period("M").astype(str)
     df_tempo_contagem = df_tempo.groupby("AnoMes")["PACIENTE_ID"].nunique().reset_index()
     df_tempo_contagem.columns = ["Ano-Mês", "Pacientes Atendidos"]
     fig_tempo = px.line(df_tempo_contagem, x="Ano-Mês", y="Pacientes Atendidos",
                         markers=True, title="Pacientes Atendidos por Mês")
+    fig_tempo.update_yaxes(range=[0, df_tempo_contagem["Pacientes Atendidos"].max() + 1])
     st.plotly_chart(fig_tempo, use_container_width=True)
