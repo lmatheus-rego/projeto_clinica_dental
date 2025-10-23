@@ -96,7 +96,7 @@ col1, col2, col3, col4, col5 = st.columns([2,2,2,2,2])
 
 def mostrar_dado(label, valor):
     """Retorna HTML formatado para um dado clínico com fallback."""
-    valor_exibido = valor.strip() if valor and str(valor).strip() else "Informação não cadastrada"
+    valor_exibido = valor.strip() if valor and str(valor).strip() else "-"
     return f"<div style='text-align:center;'><strong>{label}</strong><br>{valor_exibido}</div>"
 
 with col1:
