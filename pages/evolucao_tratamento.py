@@ -91,7 +91,7 @@ with col4:
     st.markdown(f"<h5 style='text-align:center; color:{status_color};'>{status_emoji}<br>Status: {paciente_info.get('STATUS','')}</h5>", unsafe_allow_html=True)
 
 # ----------------- Exibir Dados Clínicos -----------------
-st.markdown("<h5 style='text-align:center;'>🩺 Dados Clínicos</h5><hr>", unsafe_allow_html=True)
+st.markdown("<br><h4 style='text-align:center;'>🩺 Dados Clínicos</h4><hr>", unsafe_allow_html=True)
 col1, col2, col3, col4, col5 = st.columns([2,2,2,2,2])
 
 def mostrar_dado(label, valor):
