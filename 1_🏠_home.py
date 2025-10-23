@@ -149,10 +149,10 @@ else:
 def pacientes_do_mes(df):
     if "DATA_REGISTRO" not in df_registros.columns:
         return 0
-    df["ID"] = df_registros["PACIENTE_ID"], errors='coerce'
-    hoje = datetime.now()
-    return df[(df_registros["DATA_REGISTRO"].dt.month == hoje.month) &
-              (df_registros["DATA_REGISTRO"].dt.year == hoje.year)].shape[0]
+    if df["ID"] == df_registros["PACIENTE_ID"]:
+        hoje = datetime.now()
+        return df[(df_registros["DATA_REGISTRO"].dt.month == hoje.month) &
+                  (df_registros["DATA_REGISTRO"].dt.year == hoje.year)].shape[0]
 
 
 total_pacientes = len(df_pacientes)
