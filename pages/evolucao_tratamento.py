@@ -128,19 +128,26 @@ with st.expander(f"⬇️ Dados do Paciente: {paciente_info.get('NOME')} ⬇️ 
 descricao_evolucao = st.text_area("📝 **Descrição da Evolução**", height=100)
 data_evolucao = st.date_input("📅 **Data da Evolução**", format="DD/MM/YYYY")
 
+# Capturar o usuário logado no Streamlit Cloud
+user_info = st.experimental_user
+if user_info:
+    usuario_logado = user_info.get("email") or user_info.get("name") or "Usuário não identificado"
+else:
+    usuario_logado = "Usuário não logado"
+
 if st.button("💾 Salvar Evolução"):
     if not descricao_evolucao.strip():
         st.warning("⚠️ A descrição da evolução não pode estar vazia.")
     else:
         try:
-            # Inserir evolução
+            # Inserir evolução com o nome/email do usuário logado
             aba_registros.append_row([
                 id_paciente_str,
                 data_evolucao.strftime("%d/%m/%Y"),
                 descricao_evolucao.strip(),
-                "usuario_a_definir"
+                usuario_logado
             ])
-            st.success("✅ Evolução registrada com sucesso!")
+            st.success(f"✅ Evolução registrada com sucesso por {usuario_logado}!")
 
             # Atualizar status na Fila
             registros_fila = aba_fila.get_all_records()
