@@ -53,4 +53,4 @@ google-auth
 google-api-python-client
 gspread
 plotly
-
+reportlab
