@@ -77,7 +77,10 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
 
     # Cabeçalho
     story.append(Paragraph(f"<b>Ficha Clínica - {paciente.get('Nome','')}</b>", styles["Title"]))
-    story.append(Paragraph(f"Gerado em: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}", styles["Normal"]))
+    story.append(Paragraph(
+    f"Gerado em: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
+    styles["Normal"]
+))
     story.append(Spacer(1, 12))
 
     # Dados do Paciente
@@ -118,12 +121,6 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     else:
         story.append(Paragraph("Nenhum documento encontrado.", styles["Normal"]))
 
-    # Rodapé
-    story.append(PageBreak())
-    story.append(Paragraph(
-        f"<i>Ficha clínica impressa por: {usuario_logado}</i>",
-        styles["Normal"]
-    ))
 
     doc.build(story)
     buffer.seek(0)
