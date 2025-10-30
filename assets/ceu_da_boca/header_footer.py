@@ -14,13 +14,15 @@ def render_header(show_menu=True):
     svg_data = _svg_data_uri(_ASSET_SVG_PATH) if _ASSET_SVG_PATH.exists() else ""
     st.markdown(f"""
     <style>
-    /* HEADER FULL-WIDTH IMAGE */
+    /* HEADER FULL-WIDTH IMAGE (mostra imagem completa sem cortes) */
     .cdb-header {{
         width: 100%;
-        height: 140px; /* ajuste aqui a altura desejada (ex: 100px, 120px, 160px) */
+        height: 220px; /* altura fixa do cabeçalho */
         background-image: url('{svg_data}');
-        background-size: cover;       /* cobre toda a largura mantendo proporção */
-        background-position: center;  /* centraliza a imagem */
+        background-size: contain;     /* mostra a imagem toda */
+        background-repeat: no-repeat; /* não repete */
+        background-position: center;  /* centraliza na horizontal e vertical */
+        background-color: white;      /* cor de fundo onde sobrar espaço */
         border-radius: 8px;
         margin-bottom: 20px;
     }}
@@ -28,6 +30,7 @@ def render_header(show_menu=True):
 
     <div class="cdb-header"></div>
     """, unsafe_allow_html=True)
+
 
 def render_footer():
     st.markdown("""
