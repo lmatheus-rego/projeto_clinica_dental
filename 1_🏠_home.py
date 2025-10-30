@@ -91,12 +91,15 @@ df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
 
 # Carregar as fontes e estilos
-st.markdown(f"""
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-{css_content}
-</style>
-""", unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+    {css_content}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # Renderiza o cabeçalho
 render_header()
