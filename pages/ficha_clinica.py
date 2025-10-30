@@ -3,7 +3,7 @@ import pandas as pd
 from google.oauth2.service_account import Credentials
 import gspread
 from googleapiclient.discovery import build
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
@@ -80,12 +80,12 @@ def listar_pdfs_paciente(paciente_id_str: str):
     return [arq for arq in arquivos if arq['name'].startswith(prefixo)]
 
 # --------------------------------------------
-# 🔹 Geração do PDF com logo lateral
+# 🔹 Geração do PDF com logo
 # --------------------------------------------
 def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     buffer = io.BytesIO()
-    nome_paciente = paciente.get('Nome', 'Paciente')
 
+    nome_paciente = paciente.get('Nome', 'Paciente')
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
@@ -101,36 +101,17 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     # Caminho do logo
     logo_path = Path("assets/ceu_da_boca/logo_embedded.png")
     if logo_path.exists():
-        logo = Image(str(logo_path))
-        # Altura da tabela = aprox 2 linhas de texto (~3.5 cm)
-        logo.drawHeight = 3.5*cm
-        logo.drawWidth = logo.drawHeight * logo.imageWidth / logo.imageHeight  # mantém proporção
-    else:
-        logo = Paragraph(" ", styles["Normal"])
+        # Ajuste da largura (12cm = largura total do PDF ~ A4)
+        story.append(Image(str(logo_path), width=12*cm, height=7*cm))
+        story.append(Spacer(1, 12))
 
-    # Cabeçalho: duas linhas de texto + logo lateral
-    texto_linha1 = Paragraph(f"<b>Ficha de Paciente - {nome_paciente}</b>", styles["Title"])
-    texto_linha2 = Paragraph(
-        f"Gerado em {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
+    # Cabeçalho
+    story.append(Paragraph(f"<b>Ficha de Paciente - {nome_paciente}</b>", styles["Title"]))
+    story.append(Paragraph(
+        f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
         styles["Normal"]
-    )
-
-    data = [
-        [texto_linha1, logo],
-        [texto_linha2, '']
-    ]
-
-    tabela_header = Table(data, colWidths=[11*cm, 5*cm])
-    tabela_header.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (1,0), (1,1), 'CENTER'),
-        ('SPAN', (1,0), (1,1)),  # logo ocupa as duas linhas
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-    ]))
-
-    story.append(tabela_header)
-    story.append(Spacer(1, 18))
+    ))
+    story.append(Spacer(1, 12))
 
     def add_title(text):
         story.append(Spacer(1, 12))
@@ -145,8 +126,11 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
 
     # 🩺 Dados Clínicos
     add_title("🩺 Dados Clínicos")
-    for campo in ["Tipo De Fissura", "Historia_Tratamento", "Carac_Oclusais", "Neces_Orto", "Neces_Cirur", "Neces_Odonto", "Outros"]:
-        story.append(Paragraph(f"<b>{campo.replace('_',' ')}:</b> {paciente.get(campo,'-')}", styles["Normal"]))
+    for campo in [
+        "Tipo De Fissura", "Historia_Tratamento", "Carac_Oclusais",
+        "Neces_Orto", "Neces_Cirur", "Neces_Odonto", "Outros"
+    ]:
+        story.append(Paragraph(f"<b>{campo.replace('_', ' ')}:</b> {paciente.get(campo, '-')}", styles["Normal"]))
     story.append(Spacer(1, 12))
 
     # 📜 Evoluções
@@ -178,7 +162,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     return buffer
 
 # --------------------------------------------
-# 🔹 Página principal Streamlit
+# 🔹 Página principal
 # --------------------------------------------
 st.title("🗂️ Ficha de Paciente")
 
@@ -222,28 +206,28 @@ with col_btn2:
         )
 
 # --------------------------------------------
-# 🔹 Expansores Streamlit
+# 🔹 Expansores (colapsáveis)
 # --------------------------------------------
 with st.expander("🧾 Dados do Paciente", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
-        st.write(f"**Nome:** {paciente.get('Nome', '-')}")
-        st.write(f"**Idade:** {paciente.get('Idade', '-')}")
-        st.write(f"**Sexo:** {paciente.get('Sexo', '-')}")
-        st.write(f"**Data de Nascimento:** {paciente.get('Data', '-')}")
+        st.write(f"**Nome:** {paciente.get('Nome', '-')}") 
+        st.write(f"**Idade:** {paciente.get('Idade', '-')}") 
+        st.write(f"**Sexo:** {paciente.get('Sexo', '-')}") 
+        st.write(f"**Data de Nascimento:** {paciente.get('Data', '-')}") 
     with col2:
-        st.write(f"**Endereço:** {paciente.get('Endereco', '-')}")
-        st.write(f"**Filiação:** {paciente.get('Filiacao', '-')}")
-        st.write(f"**Telefone:** {paciente.get('Telefone', '-')}")
+        st.write(f"**Endereço:** {paciente.get('Endereco', '-')}") 
+        st.write(f"**Filiação:** {paciente.get('Filiacao', '-')}") 
+        st.write(f"**Telefone:** {paciente.get('Telefone', '-')}") 
         st.write(f"**FAO:** {paciente.get('Fao', '-')}")
 
 with st.expander("🩺 Dados Clínicos", expanded=False):
-    st.write(f"**Tipo de Fissura:** {paciente.get('Tipo De Fissura', '-')}")
-    st.write(f"**História do Tratamento:** {paciente.get('Historia_Tratamento', '-')}")
-    st.write(f"**Características Oclusais:** {paciente.get('Carac_Oclusais', '-')}")
-    st.write(f"**Necessidades Ortodônticas:** {paciente.get('Neces_Orto', '-')}")
-    st.write(f"**Necessidades Cirúrgicas:** {paciente.get('Neces_Cirur', '-')}")
-    st.write(f"**Necessidades Odontológicas:** {paciente.get('Neces_Odonto', '-')}")
+    st.write(f"**Tipo de Fissura:** {paciente.get('Tipo De Fissura', '-')}") 
+    st.write(f"**História do Tratamento:** {paciente.get('Historia_Tratamento', '-')}") 
+    st.write(f"**Características Oclusais:** {paciente.get('Carac_Oclusais', '-')}") 
+    st.write(f"**Necessidades Ortodônticas:** {paciente.get('Neces_Orto', '-')}") 
+    st.write(f"**Necessidades Cirúrgicas:** {paciente.get('Neces_Cirur', '-')}") 
+    st.write(f"**Necessidades Odontológicas:** {paciente.get('Neces_Odonto', '-')}") 
     st.write(f"**Outros:** {paciente.get('Outros', '-')}")
 
 with st.expander("📜 Evoluções do Paciente", expanded=False):
