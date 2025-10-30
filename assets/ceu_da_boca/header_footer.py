@@ -14,16 +14,19 @@ def render_header(show_menu=True):
     svg_data = _svg_data_uri(_ASSET_SVG_PATH) if _ASSET_SVG_PATH.exists() else ""
     st.markdown(f"""
     <style>
-    .cdb-header{{display:flex;align-items:center;gap:16px;padding:12px 0}}
-    .cdb-logo{{height:72px}}
-    .cdb-title{{font-family: 'Great Vibes', cursive; font-size:34px; margin:0; color:#071a2a}}
-    .cdb-sub{{font-family: 'Montserrat', sans-serif; font-size:12px; color:#223344; margin:0}}
+    /* HEADER FULL-WIDTH IMAGE */
+    .cdb-header {{
+        width: 100%;
+        height: 140px; /* ajuste aqui a altura desejada (ex: 100px, 120px, 160px) */
+        background-image: url('{svg_data}');
+        background-size: cover;       /* cobre toda a largura mantendo proporção */
+        background-position: center;  /* centraliza a imagem */
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }}
     </style>
-    <div class="cdb-header">
-      <img class="cdb-logo" src="{svg_data}" alt="Céu da Boca logo" />
-      <div>
-      </div>
-    </div>
+
+    <div class="cdb-header"></div>
     """, unsafe_allow_html=True)
 
 def render_footer():
