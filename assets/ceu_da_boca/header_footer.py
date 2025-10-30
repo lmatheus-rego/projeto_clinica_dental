@@ -22,8 +22,6 @@ def render_header(show_menu=True):
     <div class="cdb-header">
       <img class="cdb-logo" src="{svg_data}" alt="Céu da Boca logo" />
       <div>
-        <h1 class="cdb-title">Céu da Boca</h1>
-        <div class="cdb-sub">UFAM</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
