@@ -103,7 +103,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     if logo_path.exists():
         # Ajuste da largura (12cm = largura total do PDF ~ A4)
         story.append(Image(str(logo_path), width=10*cm, height=6*cm))
-        story.append(Spacer(1, 12))
+        story.append(Spacer(1, 6))
 
     # Cabeçalho
     story.append(Paragraph(f"<b>Ficha de Paciente - {nome_paciente}</b>", styles["Title"]))
