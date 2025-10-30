@@ -87,11 +87,6 @@ df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
 
-# Carregar as fontes e estilos
-st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-""" + open("assets/ceu_da_boca/style.css").read() + "</style>", unsafe_allow_html=True)
 
 # Renderiza o cabeçalho
 render_header()
