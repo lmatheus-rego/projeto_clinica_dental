@@ -182,8 +182,12 @@ evolucoes_paciente = pd.DataFrame()
 if "PACIENTE_ID" in df_evolucao.columns:
     evolucoes_paciente = df_evolucao[df_evolucao["PACIENTE_ID"].astype(str) == id_paciente_str]
 
-# Usuário autenticado
-usuario_logado = st.session_state.get("user_email", "Usuário não identificado")
+# Capturar o usuário logado no Streamlit Cloud
+user_info = st.experimental_user
+if user_info:
+    usuario_logado = user_info.get("email") or user_info.get("name") or "Usuário não identificado"
+else:
+    usuario_logado = "Usuário não logado"
 
 with col_btn2:
     if st.button("🖨️ Imprimir Ficha Clínica"):
