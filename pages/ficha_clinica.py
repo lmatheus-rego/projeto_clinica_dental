@@ -80,7 +80,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         story.append(Spacer(1, 8))
 
     # Cabeçalho
-    story.append(Paragraph(f"<b>Ficha Clínica <br> {paciente.get('Nome','')}</b>", styles["Title"]))
+    story.append(Paragraph(f"<b>Ficha Clínica - {paciente.get('Nome','')}</b>", styles["Title"]))
     story.append(Paragraph(
     f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
     styles["Normal"]
