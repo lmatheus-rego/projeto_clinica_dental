@@ -45,7 +45,7 @@ def delete_page(main_script_path_str, page_name):
 # ==========================
 # Configuração inicial
 # ==========================
-st.set_page_config(page_title="Home", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="Projeto Céu da Boca", page_icon="🦷", layout="wide")
 st.sidebar.title("📅 Fila de Atendimentos de Hoje")
 st.title("Projeto Céu da Boca")
 
@@ -91,8 +91,7 @@ df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
 
 
-# Renderiza o cabeçalho
-render_header()
+
 
 # ==========================
 # 📋 Fila de Atendimento - Hoje
