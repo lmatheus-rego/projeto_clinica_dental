@@ -30,6 +30,7 @@ else:
 # 🔹 Funções auxiliares
 # --------------------------------------------
 def get_credentials(scopes):
+    """Cria credenciais Google sem alterar st.secrets"""
     service_account_info = dict(st.secrets["gcp_service_account"])
     service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
     return Credentials.from_service_account_info(service_account_info, scopes=scopes)
@@ -79,7 +80,7 @@ def listar_pdfs_paciente(paciente_id_str: str):
     return [arq for arq in arquivos if arq['name'].startswith(prefixo)]
 
 # --------------------------------------------
-# 🔹 Geração do PDF com logo lateral no cabeçalho
+# 🔹 Geração do PDF com logo lateral
 # --------------------------------------------
 def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     buffer = io.BytesIO()
@@ -101,7 +102,9 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     logo_path = Path("assets/ceu_da_boca/logo_embedded.png")
     if logo_path.exists():
         logo = Image(str(logo_path))
-        logo.hAlign = 'CENTER'
+        # Altura da tabela = aprox 2 linhas de texto (~3.5 cm)
+        logo.drawHeight = 3.5*cm
+        logo.drawWidth = logo.drawHeight * logo.imageWidth / logo.imageHeight  # mantém proporção
     else:
         logo = Paragraph(" ", styles["Normal"])
 
@@ -112,7 +115,6 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         styles["Normal"]
     )
 
-    # Tabela 2x2, logo ocupa 2 linhas
     data = [
         [texto_linha1, logo],
         [texto_linha2, '']
@@ -176,7 +178,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     return buffer
 
 # --------------------------------------------
-# 🔹 Página principal
+# 🔹 Página principal Streamlit
 # --------------------------------------------
 st.title("🗂️ Ficha de Paciente")
 
@@ -220,7 +222,7 @@ with col_btn2:
         )
 
 # --------------------------------------------
-# 🔹 Expansores (colapsáveis)
+# 🔹 Expansores Streamlit
 # --------------------------------------------
 with st.expander("🧾 Dados do Paciente", expanded=True):
     col1, col2 = st.columns(2)
