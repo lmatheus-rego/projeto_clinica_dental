@@ -99,7 +99,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     story = []
 
     # Caminho do logo
-    logo_path = Path("assets/ceu_da_boca/logo_embedded.svg")
+    logo_path = Path("assets/ceu_da_boca/logo_embedded.png")
     if logo_path.exists():
         # Ajuste da largura (12cm = largura total do PDF ~ A4)
         story.append(Image(str(logo_path), width=12*cm, height=3*cm))
