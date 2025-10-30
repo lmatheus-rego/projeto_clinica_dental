@@ -91,8 +91,8 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         pagesize=A4,
         title=f"Ficha de {nome_paciente}",
         author=usuario_logado,
-        topMargin=2*cm,
-        bottomMargin=2*cm
+        topMargin=0*cm,
+        bottomMargin=0*cm
     )
 
     styles = getSampleStyleSheet()
@@ -102,7 +102,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     logo_path = Path("assets/ceu_da_boca/logo_embedded.png")
     if logo_path.exists():
         # Ajuste da largura (12cm = largura total do PDF ~ A4)
-        story.append(Image(str(logo_path), width=12*cm, height=7*cm))
+        story.append(Image(str(logo_path), width=10*cm, height=5*cm))
         story.append(Spacer(1, 12))
 
     # Cabeçalho
