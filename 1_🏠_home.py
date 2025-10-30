@@ -14,14 +14,6 @@ from assets.ceu_da_boca.header_footer import render_header, render_footer, _svg_
 # ==========================
 st.set_page_config(page_title="Projeto Céu da Boca", page_icon="🦷", layout="wide")
 
-# ==========================
-# CSS global
-# ==========================
-css_path = "assets/ceu_da_boca/style.css"
-with open(css_path, "r", encoding="utf-8") as f:
-    css_content = f.read()
-st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
-
 
 # ==========================
 # Adicionar logotipo como marca d’água na sidebar
