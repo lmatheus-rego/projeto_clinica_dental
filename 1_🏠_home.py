@@ -229,3 +229,6 @@ if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
     fig_tempo.update_layout(margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor="white",
                             plot_bgcolor="white")
     st.plotly_chart(fig_tempo, use_container_width=True, config={"displayModeBar": False})
+
+# Renderiza o rodapé
+render_footer()
