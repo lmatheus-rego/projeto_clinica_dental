@@ -9,6 +9,10 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 import io
 import datetime
+import pytz
+
+# Definir fuso horário de Manaus
+fuso_manaus = pytz.timezone("America/Manaus")
 
 # --------------------------------------------
 # 🔹 Funções auxiliares
@@ -76,9 +80,9 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         story.append(Spacer(1, 8))
 
     # Cabeçalho
-    story.append(Paragraph(f"<b>Ficha Clínica - {paciente.get('Nome','')}</b>", styles["Title"]))
+    story.append(Paragraph(f"<b>Ficha Clínica <br> {paciente.get('Nome','')}</b>", styles["Title"]))
     story.append(Paragraph(
-    f"Gerado em: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
+    f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
     styles["Normal"]
 ))
     story.append(Spacer(1, 12))
