@@ -3,7 +3,7 @@ import pandas as pd
 from google.oauth2.service_account import Credentials
 import gspread
 from googleapiclient.discovery import build
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
@@ -11,7 +11,9 @@ import io
 import datetime
 import pytz
 
-# Definir fuso horário de Manaus
+# --------------------------------------------
+# 🔹 Definir fuso horário de Manaus
+# --------------------------------------------
 fuso_manaus = pytz.timezone("America/Manaus")
 
 # --------------------------------------------
@@ -66,11 +68,21 @@ def listar_pdfs_paciente(paciente_id_str: str):
     return [arq for arq in arquivos if arq['name'].startswith(prefixo)]
 
 # --------------------------------------------
-# 🔹 Geração de PDF da ficha clínica
+# 🔹 Geração do PDF
 # --------------------------------------------
 def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+
+    nome_paciente = paciente.get('Nome', 'Paciente')
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        title=f"Ficha de {nome_paciente}",
+        author=usuario_logado,
+        topMargin=2*cm,
+        bottomMargin=2*cm
+    )
+
     styles = getSampleStyleSheet()
     story = []
 
@@ -80,20 +92,21 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         story.append(Spacer(1, 8))
 
     # Cabeçalho
-    story.append(Paragraph(f"<b>Ficha Clínica - {paciente.get('Nome','')}</b>", styles["Title"]))
+    story.append(Paragraph(f"<b>Ficha de Paciente - {nome_paciente}</b>", styles["Title"]))
     story.append(Paragraph(
-    f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
-    styles["Normal"]
-))
+        f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} "
+        f"por {usuario_logado}",
+        styles["Normal"]
+    ))
     story.append(Spacer(1, 12))
 
-    # Dados do Paciente
+    # 🧾 Dados do Paciente
     add_title("🧾 Dados do Paciente")
     for campo in ["Nome", "Idade", "Sexo", "Data", "Endereco", "Filiacao", "Telefone", "Fao"]:
         story.append(Paragraph(f"<b>{campo}:</b> {paciente.get(campo, '-')}", styles["Normal"]))
     story.append(Spacer(1, 12))
 
-    # Dados Clínicos
+    # 🩺 Dados Clínicos
     add_title("🩺 Dados Clínicos")
     for campo in [
         "Tipo De Fissura", "Historia_Tratamento", "Carac_Oclusais",
@@ -102,9 +115,10 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         story.append(Paragraph(f"<b>{campo.replace('_', ' ')}:</b> {paciente.get(campo, '-')}", styles["Normal"]))
     story.append(Spacer(1, 12))
 
-    # Evoluções
+    # 📜 Evoluções do Paciente
     add_title("📜 Evoluções do Paciente")
     if not evolucoes.empty:
+        evolucoes = evolucoes.sort_values(by="DATA_REGISTRO", ascending=False)
         for _, row in evolucoes.iterrows():
             story.append(Paragraph(f"<b>Data:</b> {row.get('DATA_REGISTRO','')}", styles["Normal"]))
             story.append(Paragraph(f"<b>Descrição:</b> {row.get('EVOLUCAO','')}", styles["Normal"]))
@@ -112,10 +126,9 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
             story.append(Spacer(1, 8))
     else:
         story.append(Paragraph("Nenhuma evolução registrada.", styles["Normal"]))
-
     story.append(Spacer(1, 12))
 
-    # Documentos
+    # 📎 Documentos Anexados
     add_title("📎 Documentos Anexados")
     if arquivos:
         for arq in arquivos:
@@ -124,7 +137,6 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
             story.append(Paragraph(f"{nome} - <a href='{link}' color='blue'>{link}</a>", styles["Normal"]))
     else:
         story.append(Paragraph("Nenhum documento encontrado.", styles["Normal"]))
-
 
     doc.build(story)
     buffer.seek(0)
@@ -172,7 +184,7 @@ with col_btn2:
     if st.button("🖨️ Imprimir Ficha Clínica"):
         pdf = gerar_pdf_ficha(paciente, evolucoes_paciente, arquivos, usuario_logado)
         st.download_button(
-            label="⬇️ Baixar Ficha Clínica (PDF)",
+            label="⬇️ Baixar Ficha de Paciente (PDF)",
             data=pdf,
             file_name=f"Ficha_{paciente.get('Nome','sem_nome')}.pdf",
             mime="application/pdf"
