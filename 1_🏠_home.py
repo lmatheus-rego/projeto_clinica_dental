@@ -7,6 +7,9 @@ from google.oauth2.service_account import Credentials
 from pathlib import Path
 import plotly.express as px
 from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
+from assets.ceu_da_boca.header_footer import render_header, render_footer
+
+
 
 # ==========================
 # Funções de páginas dinâmicas
@@ -83,6 +86,15 @@ def carregar_aba(nome_aba, tentativas=3, delay=3):
 df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
+
+# Carregar as fontes e estilos
+st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+""" + open("assets/ceu_da_boca/style.css").read() + "</style>", unsafe_allow_html=True)
+
+# Renderiza o cabeçalho
+render_header()
 
 # ==========================
 # 📋 Fila de Atendimento - Hoje

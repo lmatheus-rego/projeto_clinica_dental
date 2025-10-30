@@ -1,0 +1,10 @@
+
+/* Paleta e estilos base para incorporar no Streamlit via st.markdown(...unsafe_allow_html=True) */
+:root{
+  --cdb-blue: #bfe1f8;
+  --cdb-dark: #071a2a;
+  --cdb-mid: #223344;
+  --cdb-accent: #7fb6e6;
+}
+body { font-family: 'Montserrat', sans-serif; color: var(--cdb-dark); }
+.cdb-btn { border-radius:10px; padding:8px 12px; background:var(--cdb-accent); color:white; border:none; }
