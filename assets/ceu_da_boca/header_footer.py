@@ -37,6 +37,6 @@ def render_footer():
     </style>
     <div class="cdb-footer">
       <div class="left">© Céu da Boca - UFAM</div>
-      <div class="right">Desenvolvido por equipe clínica • <a href="mailto:contato@exemplo.com">contato</a></div>
+      <div class="right">Desenvolvido por • <a href="mailto:luciomatheus.frego@gmail.com">contato</a></div>
     </div>
     """, unsafe_allow_html=True)
