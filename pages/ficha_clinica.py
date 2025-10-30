@@ -3,13 +3,14 @@ import pandas as pd
 from google.oauth2.service_account import Credentials
 import gspread
 from googleapiclient.discovery import build
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 import io
 import datetime
 import pytz
+from pathlib import Path
 
 # --------------------------------------------
 # 🔹 Definir fuso horário de Manaus
@@ -17,16 +18,17 @@ import pytz
 fuso_manaus = pytz.timezone("America/Manaus")
 
 # --------------------------------------------
-# 🔹 Funções auxiliares
+# 🔹 Capturar o usuário logado
 # --------------------------------------------
-
-# Capturar o usuário logado no Streamlit Cloud
 user_info = st.experimental_user
 if user_info:
     usuario_logado = user_info.get("email") or user_info.get("name")
 else:
     usuario_logado = "Usuário não logado"
-    
+
+# --------------------------------------------
+# 🔹 Funções auxiliares
+# --------------------------------------------
 def get_credentials(scopes):
     """Cria credenciais Google sem alterar st.secrets"""
     service_account_info = dict(st.secrets["gcp_service_account"])
@@ -47,7 +49,6 @@ def carregar_evolucoes():
     gc = gspread.authorize(credentials)
     registros_sheet = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Registros")
     df = pd.DataFrame(registros_sheet.get_all_records())
-    # Converter datas para datetime
     if "DATA_REGISTRO" in df.columns:
         df["DATA_REGISTRO"] = pd.to_datetime(df["DATA_REGISTRO"], format="%d/%m/%Y", errors="coerce")
     return df
@@ -79,7 +80,7 @@ def listar_pdfs_paciente(paciente_id_str: str):
     return [arq for arq in arquivos if arq['name'].startswith(prefixo)]
 
 # --------------------------------------------
-# 🔹 Geração do PDF
+# 🔹 Geração do PDF com logo
 # --------------------------------------------
 def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     buffer = io.BytesIO()
@@ -97,10 +98,12 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     styles = getSampleStyleSheet()
     story = []
 
-    def add_title(text):
+    # Caminho do logo
+    logo_path = Path("assets/ceu_da_boca/logo_embedded.svg")
+    if logo_path.exists():
+        # Ajuste da largura (12cm = largura total do PDF ~ A4)
+        story.append(Image(str(logo_path), width=12*cm, height=3*cm))
         story.append(Spacer(1, 12))
-        story.append(Paragraph(f"<b>{text}</b>", styles["Heading2"]))
-        story.append(Spacer(1, 8))
 
     # Cabeçalho
     story.append(Paragraph(f"<b>Ficha de Paciente - {nome_paciente}</b>", styles["Title"]))
@@ -109,6 +112,11 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         styles["Normal"]
     ))
     story.append(Spacer(1, 12))
+
+    def add_title(text):
+        story.append(Spacer(1, 12))
+        story.append(Paragraph(f"<b>{text}</b>", styles["Heading2"]))
+        story.append(Spacer(1, 8))
 
     # 🧾 Dados do Paciente
     add_title("🧾 Dados do Paciente")
@@ -125,10 +133,9 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         story.append(Paragraph(f"<b>{campo.replace('_', ' ')}:</b> {paciente.get(campo, '-')}", styles["Normal"]))
     story.append(Spacer(1, 12))
 
-    # 📜 Evoluções do Paciente
+    # 📜 Evoluções
     add_title("📜 Evoluções do Paciente")
     if not evolucoes.empty:
-        # Ordenar da mais nova para a mais antiga
         evolucoes_sorted = evolucoes.sort_values(by="DATA_REGISTRO", ascending=False)
         for _, row in evolucoes_sorted.iterrows():
             data_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else ""
@@ -140,7 +147,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
         story.append(Paragraph("Nenhuma evolução registrada.", styles["Normal"]))
     story.append(Spacer(1, 12))
 
-    # 📎 Documentos Anexados
+    # 📎 Documentos
     add_title("📎 Documentos Anexados")
     if arquivos:
         for arq in arquivos:
@@ -164,7 +171,6 @@ if isinstance(id_paciente_str, list):
     id_paciente_str = id_paciente_str[0]
 id_paciente_str = id_paciente_str.strip()
 
-# Botões iniciais
 col_btn1, col_btn2 = st.columns(2)
 with col_btn1:
     if st.button("🔙 Voltar para Lista de Pacientes"):
@@ -185,11 +191,9 @@ paciente = paciente_df.iloc[0]
 # Carregar evoluções e anexos
 df_evolucao = carregar_evolucoes()
 arquivos = listar_pdfs_paciente(id_paciente_str)
-
 evolucoes_paciente = pd.DataFrame()
 if "PACIENTE_ID" in df_evolucao.columns:
     evolucoes_paciente = df_evolucao[df_evolucao["PACIENTE_ID"].astype(str) == id_paciente_str]
-
 
 with col_btn2:
     if st.button("🖨️ Imprimir Ficha Clínica"):
@@ -207,23 +211,23 @@ with col_btn2:
 with st.expander("🧾 Dados do Paciente", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
-        st.write(f"**Nome:** {paciente.get('Nome', '-')}")
-        st.write(f"**Idade:** {paciente.get('Idade', '-')}")
-        st.write(f"**Sexo:** {paciente.get('Sexo', '-')}")
-        st.write(f"**Data de Nascimento:** {paciente.get('Data', '-')}")
+        st.write(f"**Nome:** {paciente.get('Nome', '-')}") 
+        st.write(f"**Idade:** {paciente.get('Idade', '-')}") 
+        st.write(f"**Sexo:** {paciente.get('Sexo', '-')}") 
+        st.write(f"**Data de Nascimento:** {paciente.get('Data', '-')}") 
     with col2:
-        st.write(f"**Endereço:** {paciente.get('Endereco', '-')}")
-        st.write(f"**Filiação:** {paciente.get('Filiacao', '-')}")
-        st.write(f"**Telefone:** {paciente.get('Telefone', '-')}")
+        st.write(f"**Endereço:** {paciente.get('Endereco', '-')}") 
+        st.write(f"**Filiação:** {paciente.get('Filiacao', '-')}") 
+        st.write(f"**Telefone:** {paciente.get('Telefone', '-')}") 
         st.write(f"**FAO:** {paciente.get('Fao', '-')}")
 
 with st.expander("🩺 Dados Clínicos", expanded=False):
-    st.write(f"**Tipo de Fissura:** {paciente.get('Tipo De Fissura', '-')}")
-    st.write(f"**História do Tratamento:** {paciente.get('Historia_Tratamento', '-')}")
-    st.write(f"**Características Oclusais:** {paciente.get('Carac_Oclusais', '-')}")
-    st.write(f"**Necessidades Ortodônticas:** {paciente.get('Neces_Orto', '-')}")
-    st.write(f"**Necessidades Cirúrgicas:** {paciente.get('Neces_Cirur', '-')}")
-    st.write(f"**Necessidades Odontológicas:** {paciente.get('Neces_Odonto', '-')}")
+    st.write(f"**Tipo de Fissura:** {paciente.get('Tipo De Fissura', '-')}") 
+    st.write(f"**História do Tratamento:** {paciente.get('Historia_Tratamento', '-')}") 
+    st.write(f"**Características Oclusais:** {paciente.get('Carac_Oclusais', '-')}") 
+    st.write(f"**Necessidades Ortodônticas:** {paciente.get('Neces_Orto', '-')}") 
+    st.write(f"**Necessidades Cirúrgicas:** {paciente.get('Neces_Cirur', '-')}") 
+    st.write(f"**Necessidades Odontológicas:** {paciente.get('Neces_Odonto', '-')}") 
     st.write(f"**Outros:** {paciente.get('Outros', '-')}")
 
 with st.expander("📜 Evoluções do Paciente", expanded=False):
