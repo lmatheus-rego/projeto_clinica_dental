@@ -39,6 +39,9 @@ def carregar_evolucoes():
     gc = gspread.authorize(credentials)
     registros_sheet = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Registros")
     df = pd.DataFrame(registros_sheet.get_all_records())
+    # Converter datas para datetime
+    if "DATA_REGISTRO" in df.columns:
+        df["DATA_REGISTRO"] = pd.to_datetime(df["DATA_REGISTRO"], format="%d/%m/%Y", errors="coerce")
     return df
 
 def listar_pdfs_paciente(paciente_id_str: str):
@@ -94,8 +97,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     # Cabeçalho
     story.append(Paragraph(f"<b>Ficha de Paciente - {nome_paciente}</b>", styles["Title"]))
     story.append(Paragraph(
-        f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} "
-        f"por {usuario_logado}",
+        f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
         styles["Normal"]
     ))
     story.append(Spacer(1, 12))
@@ -118,9 +120,11 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     # 📜 Evoluções do Paciente
     add_title("📜 Evoluções do Paciente")
     if not evolucoes.empty:
-        evolucoes = evolucoes.sort_values(by="DATA_REGISTRO", ascending=False)
-        for _, row in evolucoes.iterrows():
-            story.append(Paragraph(f"<b>Data:</b> {row.get('DATA_REGISTRO','')}", styles["Normal"]))
+        # Ordenar da mais nova para a mais antiga
+        evolucoes_sorted = evolucoes.sort_values(by="DATA_REGISTRO", ascending=False)
+        for _, row in evolucoes_sorted.iterrows():
+            data_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else ""
+            story.append(Paragraph(f"<b>Data:</b> {data_str}", styles["Normal"]))
             story.append(Paragraph(f"<b>Descrição:</b> {row.get('EVOLUCAO','')}", styles["Normal"]))
             story.append(Paragraph(f"<i>Registrado por:</i> {row.get('USUARIO','')}", styles["Italic"]))
             story.append(Spacer(1, 8))
@@ -145,7 +149,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
 # --------------------------------------------
 # 🔹 Página principal
 # --------------------------------------------
-st.title("🗂️ Ficha Clínica do Paciente")
+st.title("🗂️ Ficha de Paciente")
 
 id_paciente_str = st.query_params.get("idpaciente", "")
 if isinstance(id_paciente_str, list):
@@ -178,6 +182,7 @@ evolucoes_paciente = pd.DataFrame()
 if "PACIENTE_ID" in df_evolucao.columns:
     evolucoes_paciente = df_evolucao[df_evolucao["PACIENTE_ID"].astype(str) == id_paciente_str]
 
+# Usuário autenticado
 usuario_logado = st.session_state.get("user_email", "Usuário não identificado")
 
 with col_btn2:
@@ -219,9 +224,10 @@ with st.expander("📜 Evoluções do Paciente", expanded=False):
     if not evolucoes_paciente.empty:
         evolucoes_paciente = evolucoes_paciente.sort_values(by="DATA_REGISTRO", ascending=False)
         for _, row in evolucoes_paciente.iterrows():
+            data_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else ""
             st.markdown(f"""
             <div style='padding:10px; background-color:#f9f9f9; border-left:4px solid #0d6efd; margin-bottom:8px; border-radius:5px;'>
-                <b>📅 {row.get("DATA_REGISTRO","")}</b><br>
+                <b>📅 {data_str}</b><br>
                 <i>{row.get("EVOLUCAO","")}</i><br>
                 <span style='color:gray;'>👤 {row.get("USUARIO","")}</span>
             </div>
