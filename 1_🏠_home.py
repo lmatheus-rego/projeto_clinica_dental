@@ -22,27 +22,6 @@ with open(css_path, "r", encoding="utf-8") as f:
     css_content = f.read()
 st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
-# ==========================
-# Cabeçalho fixo no topo da página
-# ==========================
-st.markdown("""
-<style>
-.cdb-global-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 180px;
-    background-color: white;
-    z-index: 9999;
-}
-.main, .block-container {
-    padding-top: 200px !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-render_header(show_menu=False)
 
 # ==========================
 # Adicionar logotipo como marca d’água na sidebar
