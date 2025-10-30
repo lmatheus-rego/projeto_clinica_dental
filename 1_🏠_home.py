@@ -10,7 +10,10 @@ from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_p
 from assets.ceu_da_boca.header_footer import render_header, render_footer
 
 
+css_path = "assets/ceu_da_boca/style.css"
 
+with open(css_path, "r", encoding="utf-8") as f:
+    css_content = f.read()
 # ==========================
 # Funções de páginas dinâmicas
 # ==========================
@@ -88,10 +91,12 @@ df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
 
 # Carregar as fontes e estilos
-st.markdown("""
+st.markdown(f"""
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-""" + open("assets/ceu_da_boca/style.css").read() + "</style>", unsafe_allow_html=True)
+{css_content}
+</style>
+""", unsafe_allow_html=True)
 
 # Renderiza o cabeçalho
 render_header()
