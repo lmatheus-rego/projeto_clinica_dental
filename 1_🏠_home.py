@@ -90,36 +90,7 @@ df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
 
-# ==========================
-# Adicionar logotipo como marca d’água na sidebar
-# ==========================
-svg_data = _svg_data_uri(_ASSET_SVG_PATH) if _ASSET_SVG_PATH.exists() else ""
 
-st.markdown(f"""
-<style>
-/* Marca d'água no topo da sidebar */
-[data-testid="stSidebar"]::before {{
-    content: "";
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 85%;
-    height: 120px;
-    background-image: url('{svg_data}');
-    background-repeat: no-repeat;
-    background-position: center top;
-    background-size: contain;
-    opacity: 0.15; /* transparência para efeito de marca d'água */
-    z-index: 0;
-}}
-/* Garantir que os elementos da sidebar fiquem acima da imagem */
-[data-testid="stSidebar"] > div:first-child {{
-    position: relative;
-    z-index: 1;
-}}
-</style>
-""", unsafe_allow_html=True)
 
 
 # ==========================
