@@ -19,6 +19,14 @@ fuso_manaus = pytz.timezone("America/Manaus")
 # --------------------------------------------
 # 🔹 Funções auxiliares
 # --------------------------------------------
+
+# Capturar o usuário logado no Streamlit Cloud
+user_info = st.experimental_user
+if user_info:
+    usuario_logado = user_info.get("email") or user_info.get("name")
+else:
+    usuario_logado = "Usuário não logado"
+    
 def get_credentials(scopes):
     """Cria credenciais Google sem alterar st.secrets"""
     service_account_info = dict(st.secrets["gcp_service_account"])
@@ -182,12 +190,6 @@ evolucoes_paciente = pd.DataFrame()
 if "PACIENTE_ID" in df_evolucao.columns:
     evolucoes_paciente = df_evolucao[df_evolucao["PACIENTE_ID"].astype(str) == id_paciente_str]
 
-# Capturar o usuário logado no Streamlit Cloud
-user_info = st.experimental_user
-if user_info:
-    usuario_logado = user_info.get("email") or user_info.get("name") or "Usuário não identificado"
-else:
-    usuario_logado = "Usuário não logado"
 
 with col_btn2:
     if st.button("🖨️ Imprimir Ficha Clínica"):
