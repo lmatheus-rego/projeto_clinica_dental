@@ -68,7 +68,7 @@ with st.form("include_paciente"):
         with col2:
             filiacao = st.text_input("Filiação", key="filiacao")
             endereco = st.text_input("Endereço", key="endereco")
-            telefone = st.text_input("Telefone", placeholder="(92) 99999-9999", key="telefone")
+            telefone = st.text_input("Telefone(s)", placeholder="(92) 99999-9999 / 99999-9999", key="telefone")
     
     with st.expander("⚕️ Dados Clínicos", expanded=True):
         tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
@@ -85,10 +85,6 @@ if submit:
         erros.append("Data de Nascimento")
     if not sexo.strip():
         erros.append("Sexo")
-    if fao.strip() and not re.fullmatch(r"\d{5}/\d{2}", fao.strip()):
-        erros.append("FAO inválido (use formato 12345/67)")
-    if telefone.strip() and not re.fullmatch(r"(\(\d{2}\)\d{8,9}|\(\d{2}\)\d{5}-\d{4}|\d{11})", telefone.strip()):
-        erros.append("Telefone inválido (use formatos: 92999999999, (92)999999999, (92)99999-9999)")
 
     if erros:
         st.error(f"⚠️ Corrija os seguintes campos: {', '.join(erros)}")
