@@ -15,7 +15,7 @@ css_path = "assets/ceu_da_boca/style.css"
 with open(css_path, "r", encoding="utf-8") as f:
     css_content = f.read()
 # ==========================
-# Funções de páginas dinâmicas
+# Funções de páginas dinâmica
 # ==========================
 def add_page(main_script_path_str, page_name):
     pages = get_pages(main_script_path_str)
