@@ -241,36 +241,36 @@ with st.expander("🩺 Dados Clínicos", expanded=False):
         or "-"
     )
 
-    campo("🦷 Tipo de Fissura", tipo_fissura)
+    campo("🦷 Tipo de Fissura:", tipo_fissura)
 
-    campo("📜 História do Tratamento", get_valor_multi(
+    campo("📜 História do Tratamento:", get_valor_multi(
         paciente, "Historia_Tratamento"
     ))
 
-    campo("🔎 Características Oclusais", get_valor_multi(
+    campo("🔎 Características Oclusais:", get_valor_multi(
         paciente, "Carac_Oclusais"
     ))
 
-    campo("🦷 Necessidades Ortodônticas", get_valor_multi(
+    campo("🦷 Necessidades Ortodônticas:", get_valor_multi(
         paciente, "Neces_Orto"
     ))
 
-    campo("🏥 Necessidades Cirúrgicas", get_valor_multi(
+    campo("🏥 Necessidades Cirúrgicas:", get_valor_multi(
         paciente, "Neces_Cirur"
     ))
 
-    campo("🦷 Necessidades Odontológicas", get_valor_multi(
+    campo("🦷 Necessidades Odontológicas:", get_valor_multi(
         paciente, "Neces_Odonto"
     ))
 
-    campo("📌 Outros", get_valor_multi(
+    campo("📌 Outros:", get_valor_multi(
         paciente, "Outros"
     ))
-    campo("📋 Diagnóstico", get_valor_multi(
+    campo("📋 Diagnóstico:", get_valor_multi(
         paciente, "Diagnostico", "DIAGNOSTICO"
     ))
 
-    campo("🧭 Plano de Tratamento", get_valor_multi(
+    campo("🧭 Plano de Tratamento:", get_valor_multi(
         paciente, "Plano_Tratamento", "PLANO_TRATAMENTO"
     ))
 
