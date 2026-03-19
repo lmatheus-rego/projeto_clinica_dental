@@ -90,38 +90,6 @@ df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
 
 # ==========================
-# 📋 Fila de Atendimento
-# ==========================
-hoje = datetime.date.today()
-if "STATUS" in df_fila.columns and "DATA" in df_fila.columns:
-    df_fila["STATUS"] = df_fila["STATUS"].astype(str).str.strip().str.upper()
-    df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
-    fila_hoje = df_fila[df_fila["DATA"] == hoje]
-else:
-    fila_hoje = pd.DataFrame()
-
-if not fila_hoje.empty:
-    for _, row in fila_hoje.iterrows():
-        paciente_id = str(row.get("PACIENTE_ID", "")).strip()
-        paciente = df_pacientes[df_pacientes["ID"].astype(str).str.strip() == paciente_id]
-
-        if not paciente.empty:
-            nome_paciente = paciente.iloc[0]["NOME"]
-
-            cols = st.sidebar.columns([2, 1, 1, 1])
-            cols[0].markdown(nome_paciente)
-
-            if cols[2].button("📄", key=f"ficha_{paciente_id}"):
-                st.query_params = {"idpaciente": paciente_id}
-                add_page("1_🏠_home", "ficha_clinica")
-                st.switch_page("pages/ficha_clinica.py")
-
-            if cols[3].button("🦷", key=f"evolucao_{paciente_id}"):
-                st.query_params = {"idpaciente": paciente_id}
-                add_page("1_🏠_home", "evolucao_tratamento")
-                st.switch_page("pages/evolucao_tratamento.py")
-
-# ==========================
 # 📊 Resumo Geral
 # ==========================
 st.markdown("## 📊 Resumo Geral")
@@ -129,14 +97,10 @@ st.markdown("## 📊 Resumo Geral")
 total_pacientes = len(df_pacientes)
 atendidos_mes = len(df_registros)
 
-if "TIPO_FISSURA" in df_pacientes.columns:
-    df_pacientes["TIPO_FISSURA"] = df_pacientes["TIPO_FISSURA"].astype(str).str.strip()
-    df_pacientes["TIPO_FISSURA"] = df_pacientes["TIPO_FISSURA"].replace("", "Não Especificado")
-    df_pacientes["TIPO_FISSURA"] = df_pacientes["TIPO_FISSURA"].fillna("Não Especificado")
+df_pacientes["TIPO_FISSURA"] = df_pacientes.get("TIPO_FISSURA", "").astype(str).str.strip()
+df_pacientes["TIPO_FISSURA"] = df_pacientes["TIPO_FISSURA"].replace("", "Não Especificado").fillna("Não Especificado")
 
-    total_nao_especificado = (df_pacientes["TIPO_FISSURA"] == "Não Especificado").sum()
-else:
-    total_nao_especificado = 0
+total_nao_especificado = (df_pacientes["TIPO_FISSURA"] == "Não Especificado").sum()
 
 col1, col2, col3 = st.columns(3)
 col1.metric("👥 Total de Pacientes", total_pacientes)
@@ -144,44 +108,49 @@ col2.metric("📆 Registros de Evolução", atendidos_mes)
 col3.metric("❓ Fissura Não Especificada", total_nao_especificado)
 
 # ==========================
-# 📈 Gráficos Históricos
+# 📈 Gráficos
 # ==========================
 st.markdown("## 📈 Gráficos Históricos")
 
-# --- Tipo de Fissura (PRIMEIRO) ---
+# --- CORES POR GRUPO ---
+def cor_fissura(tipo):
+    if tipo == "Não Especificado":
+        return "#E57373"  # vermelho
+    if tipo in ["Pré-forame Unilateral Direita", "Pré-forame Unilateral Esquerda", "Pré-forame Bilateral"]:
+        return "#AED6F1"
+    if tipo in ["Transforame Unilateral Direita", "Transforame Unilateral Esquerda", "Transforame Bilateral"]:
+        return "#A9DFBF"
+    if tipo in ["Pós-forame Completa", "Pós-forame Incompleta"]:
+        return "#F9E79F"
+    if tipo == "Fissura Rara da Face":
+        return "#D7BDE2"
+    if tipo == "Fissura Mediana":
+        return "#F5CBA7"
+    return "#D5DBDB"
+
+# --- Tipo de Fissura ---
 st.markdown("### 🦷 Pacientes por Tipo de Fissura")
 
-if "TIPO_FISSURA" in df_pacientes.columns:
-    df_fissura = df_pacientes["TIPO_FISSURA"].value_counts().reset_index()
-    df_fissura.columns = ["Tipo de Fissura", "Quantidade"]
+df_fissura = df_pacientes["TIPO_FISSURA"].value_counts().reset_index()
+df_fissura.columns = ["Tipo", "Qtd"]
 
-    # separa "Não Especificado"
-    nao_esp = df_fissura[df_fissura["Tipo de Fissura"] == "Não Especificado"]
-    outros = df_fissura[df_fissura["Tipo de Fissura"] != "Não Especificado"]
+nao = df_fissura[df_fissura["Tipo"] == "Não Especificado"]
+outros = df_fissura[df_fissura["Tipo"] != "Não Especificado"].sort_values("Qtd", ascending=False)
+df_fissura = pd.concat([outros, nao])
 
-    # ordena apenas os outros
-    outros = outros.sort_values("Quantidade", ascending=False)
+df_fissura["Cor"] = df_fissura["Tipo"].apply(cor_fissura)
 
-    # concatena colocando não especificado no final
-    df_fissura = pd.concat([outros, nao_esp], ignore_index=True)
+fig = px.bar(df_fissura, x="Tipo", y="Qtd", text="Qtd", color="Tipo",
+             color_discrete_map={t: cor_fissura(t) for t in df_fissura["Tipo"]},
+             title="Distribuição por Tipo de Fissura")
 
-    fig_fissura = px.bar(
-        df_fissura,
-        x="Tipo de Fissura",
-        y="Quantidade",
-        text="Quantidade",
-        title="Distribuição por Tipo de Fissura"
-    )
-
-    st.plotly_chart(fig_fissura, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
 # --- Pizzas ---
 colg1, colg2 = st.columns(2)
 
-# Faixa Etária
 with colg1:
     st.markdown("### 🧒🏾👴🏻 Faixa Etária dos Pacientes")
-
     if "DATA" in df_pacientes.columns:
         df_pacientes["DATA"] = pd.to_datetime(df_pacientes["DATA"], errors="coerce", dayfirst=True)
         hoje = pd.Timestamp.today()
@@ -194,37 +163,27 @@ with colg1:
         df_idade = df_pacientes["FAIXA"].value_counts().reset_index()
         df_idade.columns = ["Faixa", "Qtd"]
 
-        fig = px.pie(
-            df_idade,
-            names="Faixa",
-            values="Qtd",
-            title="Distribuição por Faixa Etária"
-        )
+        fig = px.pie(df_idade, names="Faixa", values="Qtd",
+                     color_discrete_sequence=px.colors.qualitative.Pastel,
+                     title="Distribuição por Faixa Etária")
         st.plotly_chart(fig, use_container_width=True)
 
-# Sexo
 with colg2:
     st.markdown("### ♂️♀️ Pacientes por Sexo")
 
-    if "SEXO" in df_pacientes.columns:
-        df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
-        df_sexo.columns = ["Sexo", "Qtd"]
+    df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
+    df_sexo.columns = ["Sexo", "Qtd"]
 
-        cores = {
-            "Masculino": "#3498DB",
-            "Feminino": "#FF69B4"
-        }
+    cores = {
+        "Masculino": "#AED6F1",
+        "Feminino": "#F5B7B1"
+    }
 
-        fig = px.pie(
-            df_sexo,
-            names="Sexo",
-            values="Qtd",
-            color="Sexo",
-            color_discrete_map=cores,
-            title="Distribuição por Sexo"
-        )
+    fig = px.pie(df_sexo, names="Sexo", values="Qtd",
+                 color="Sexo", color_discrete_map=cores,
+                 title="Distribuição por Sexo")
 
-        st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
 # --- Linha Temporal ---
 st.markdown("### 📈 Atendimentos ao Longo do Tempo")
@@ -239,6 +198,8 @@ if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
     df_group.columns = ["Ano-Mês", "Pacientes"]
 
     fig = px.line(df_group, x="Ano-Mês", y="Pacientes", markers=True)
+    fig.update_yaxes(range=[0, df_group["Pacientes"].max() + 1])
+
     st.plotly_chart(fig, use_container_width=True)
 
 render_footer()
