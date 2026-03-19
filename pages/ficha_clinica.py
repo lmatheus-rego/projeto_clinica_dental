@@ -222,13 +222,54 @@ with st.expander("🧾 Dados do Paciente", expanded=True):
         st.write(f"**FAO:** {paciente.get('Fao', '-')}")
 
 with st.expander("🩺 Dados Clínicos", expanded=False):
-    st.write(f"**Tipo de Fissura:** {paciente.get('Tipo De Fissura', '-')}") 
-    st.write(f"**História do Tratamento:** {paciente.get('Historia_Tratamento', '-')}") 
-    st.write(f"**Características Oclusais:** {paciente.get('Carac_Oclusais', '-')}") 
-    st.write(f"**Necessidades Ortodônticas:** {paciente.get('Neces_Orto', '-')}") 
-    st.write(f"**Necessidades Cirúrgicas:** {paciente.get('Neces_Cirur', '-')}") 
-    st.write(f"**Necessidades Odontológicas:** {paciente.get('Neces_Odonto', '-')}") 
-    st.write(f"**Outros:** {paciente.get('Outros', '-')}")
+
+    def get_valor_multi(paciente, *chaves):
+        for chave in chaves:
+            if chave in paciente and str(paciente.get(chave)).strip():
+                return paciente.get(chave)
+        return "-"
+
+    def campo(label, valor):
+        st.markdown(f"**{label}**")
+        st.markdown("---")  # quebra antes
+        st.write(valor)
+        st.markdown("<br>", unsafe_allow_html=True)  # espaço depois
+
+    campo("🦷 Tipo de Fissura", get_valor_multi(
+        paciente, "Tipo De Fissura", "Tipo de Fissura", "TIPO_FISSURA"
+    ))
+
+    campo("📋 Diagnóstico", get_valor_multi(
+        paciente, "Diagnostico", "DIAGNOSTICO"
+    ))
+
+    campo("🧭 Plano de Tratamento", get_valor_multi(
+        paciente, "Plano_Tratamento", "PLANO_TRATAMENTO"
+    ))
+
+    campo("📜 História do Tratamento", get_valor_multi(
+        paciente, "Historia_Tratamento"
+    ))
+
+    campo("🔎 Características Oclusais", get_valor_multi(
+        paciente, "Carac_Oclusais"
+    ))
+
+    campo("🦷 Necessidades Ortodônticas", get_valor_multi(
+        paciente, "Neces_Orto"
+    ))
+
+    campo("🏥 Necessidades Cirúrgicas", get_valor_multi(
+        paciente, "Neces_Cirur"
+    ))
+
+    campo("🦷 Necessidades Odontológicas", get_valor_multi(
+        paciente, "Neces_Odonto"
+    ))
+
+    campo("📌 Outros", get_valor_multi(
+        paciente, "Outros"
+    ))
 
 with st.expander("📜 Evoluções do Paciente", expanded=False):
     if not evolucoes_paciente.empty:
