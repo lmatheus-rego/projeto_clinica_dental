@@ -231,19 +231,10 @@ with st.expander("🩺 Dados Clínicos", expanded=False):
 
     def campo(label, valor):
         st.markdown(f"**{label}**")
-        st.markdown("---")  # quebra antes
         st.write(valor)
 
     campo("🦷 Tipo de Fissura", get_valor_multi(
         paciente, "Tipo De Fissura", "Tipo de Fissura", "TIPO_FISSURA"
-    ))
-
-    campo("📋 Diagnóstico", get_valor_multi(
-        paciente, "Diagnostico", "DIAGNOSTICO"
-    ))
-
-    campo("🧭 Plano de Tratamento", get_valor_multi(
-        paciente, "Plano_Tratamento", "PLANO_TRATAMENTO"
     ))
 
     campo("📜 História do Tratamento", get_valor_multi(
@@ -268,6 +259,13 @@ with st.expander("🩺 Dados Clínicos", expanded=False):
 
     campo("📌 Outros", get_valor_multi(
         paciente, "Outros"
+    ))
+    campo("📋 Diagnóstico", get_valor_multi(
+        paciente, "Diagnostico", "DIAGNOSTICO"
+    ))
+
+    campo("🧭 Plano de Tratamento", get_valor_multi(
+        paciente, "Plano_Tratamento", "PLANO_TRATAMENTO"
     ))
 
 with st.expander("📜 Evoluções do Paciente", expanded=False):
