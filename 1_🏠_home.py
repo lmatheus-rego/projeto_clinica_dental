@@ -107,7 +107,6 @@ if not fila_hoje.empty:
 
         if not paciente.empty:
             nome_paciente = paciente.iloc[0]["NOME"]
-            status = row["STATUS"].capitalize()
 
             cols = st.sidebar.columns([2, 1, 1, 1])
             cols[0].markdown(nome_paciente)
@@ -130,7 +129,6 @@ st.markdown("## 📊 Resumo Geral")
 total_pacientes = len(df_pacientes)
 atendidos_mes = len(df_registros)
 
-# --- Tratamento TIPO_FISSURA ---
 if "TIPO_FISSURA" in df_pacientes.columns:
     df_pacientes["TIPO_FISSURA"] = df_pacientes["TIPO_FISSURA"].astype(str).str.strip()
     df_pacientes["TIPO_FISSURA"] = df_pacientes["TIPO_FISSURA"].replace("", "Não Especificado")
@@ -150,10 +148,40 @@ col3.metric("❓ Fissura Não Especificada", total_nao_especificado)
 # ==========================
 st.markdown("## 📈 Gráficos Históricos")
 
+# --- Tipo de Fissura (PRIMEIRO) ---
+st.markdown("### 🦷 Pacientes por Tipo de Fissura")
+
+if "TIPO_FISSURA" in df_pacientes.columns:
+    df_fissura = df_pacientes["TIPO_FISSURA"].value_counts().reset_index()
+    df_fissura.columns = ["Tipo de Fissura", "Quantidade"]
+
+    # separa "Não Especificado"
+    nao_esp = df_fissura[df_fissura["Tipo de Fissura"] == "Não Especificado"]
+    outros = df_fissura[df_fissura["Tipo de Fissura"] != "Não Especificado"]
+
+    # ordena apenas os outros
+    outros = outros.sort_values("Quantidade", ascending=False)
+
+    # concatena colocando não especificado no final
+    df_fissura = pd.concat([outros, nao_esp], ignore_index=True)
+
+    fig_fissura = px.bar(
+        df_fissura,
+        x="Tipo de Fissura",
+        y="Quantidade",
+        text="Quantidade",
+        title="Distribuição por Tipo de Fissura"
+    )
+
+    st.plotly_chart(fig_fissura, use_container_width=True)
+
+# --- Pizzas ---
 colg1, colg2 = st.columns(2)
 
-# --- Faixa Etária ---
+# Faixa Etária
 with colg1:
+    st.markdown("### 🧒🏾👴🏻 Faixa Etária dos Pacientes")
+
     if "DATA" in df_pacientes.columns:
         df_pacientes["DATA"] = pd.to_datetime(df_pacientes["DATA"], errors="coerce", dayfirst=True)
         hoje = pd.Timestamp.today()
@@ -166,40 +194,37 @@ with colg1:
         df_idade = df_pacientes["FAIXA"].value_counts().reset_index()
         df_idade.columns = ["Faixa", "Qtd"]
 
-        fig = px.pie(df_idade, names="Faixa", values="Qtd")
+        fig = px.pie(
+            df_idade,
+            names="Faixa",
+            values="Qtd",
+            title="Distribuição por Faixa Etária"
+        )
         st.plotly_chart(fig, use_container_width=True)
 
-# --- Sexo ---
+# Sexo
 with colg2:
+    st.markdown("### ♂️♀️ Pacientes por Sexo")
+
     if "SEXO" in df_pacientes.columns:
         df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
         df_sexo.columns = ["Sexo", "Qtd"]
-        fig = px.pie(df_sexo, names="Sexo", values="Qtd")
+
+        cores = {
+            "Masculino": "#3498DB",
+            "Feminino": "#FF69B4"
+        }
+
+        fig = px.pie(
+            df_sexo,
+            names="Sexo",
+            values="Qtd",
+            color="Sexo",
+            color_discrete_map=cores,
+            title="Distribuição por Sexo"
+        )
+
         st.plotly_chart(fig, use_container_width=True)
-
-# --- NOVO: Tipo de Fissura ---
-st.markdown("### 🦷 Pacientes por Tipo de Fissura")
-
-if "TIPO_FISSURA" in df_pacientes.columns:
-    df_fissura = df_pacientes["TIPO_FISSURA"].value_counts().reset_index()
-    df_fissura.columns = ["Tipo de Fissura", "Quantidade"]
-
-    fig_fissura = px.bar(
-        df_fissura,
-        x="Tipo de Fissura",
-        y="Quantidade",
-        text="Quantidade",
-        title="Distribuição por Tipo de Fissura"
-    )
-
-    fig_fissura.update_layout(
-        xaxis_title="Tipo de Fissura",
-        yaxis_title="Quantidade",
-        paper_bgcolor="white",
-        plot_bgcolor="white"
-    )
-
-    st.plotly_chart(fig_fissura, use_container_width=True)
 
 # --- Linha Temporal ---
 st.markdown("### 📈 Atendimentos ao Longo do Tempo")
