@@ -12,170 +12,246 @@ import datetime
 import pytz
 from pathlib import Path
 
+# --------------------------------------------
+# 🔹 Definir fuso horário de Manaus
+# --------------------------------------------
 fuso_manaus = pytz.timezone("America/Manaus")
 
+# --------------------------------------------
+# 🔹 Capturar o usuário logado
+# --------------------------------------------
 user_info = st.experimental_user
-usuario_logado = user_info.get("email") if user_info else "Usuário"
+if user_info:
+    usuario_logado = user_info.get("email") or user_info.get("name")
+else:
+    usuario_logado = "Usuário não logado"
 
-# ==========================
-# 🔧 FUNÇÃO PADRÃO DE CAMPO
-# ==========================
-def get_valor(paciente, *chaves):
-    for chave in chaves:
-        val = paciente.get(chave)
-        if val and str(val).strip() != "":
-            return val
-    return "-"
-
-# ==========================
-# 🔹 Google Sheets
-# ==========================
+# --------------------------------------------
+# 🔹 Funções auxiliares
+# --------------------------------------------
 def get_credentials(scopes):
-    info = dict(st.secrets["gcp_service_account"])
-    info["private_key"] = info["private_key"].replace("\\n", "\n")
-    return Credentials.from_service_account_info(info, scopes=scopes)
+    """Cria credenciais Google sem alterar st.secrets"""
+    service_account_info = dict(st.secrets["gcp_service_account"])
+    service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
+    return Credentials.from_service_account_info(service_account_info, scopes=scopes)
 
 def carregar_dados():
-    gc = gspread.authorize(get_credentials(["https://www.googleapis.com/auth/spreadsheets"]))
-    df = pd.DataFrame(gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").sheet1.get_all_records())
-    df.columns = df.columns.str.strip().str.upper()
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    credentials = get_credentials(scopes)
+    gc = gspread.authorize(credentials)
+    sheet = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").sheet1
+    df = pd.DataFrame(sheet.get_all_records())
     return df
 
 def carregar_evolucoes():
-    gc = gspread.authorize(get_credentials(["https://www.googleapis.com/auth/spreadsheets"]))
-    df = pd.DataFrame(gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Registros").get_all_records())
-    df["DATA_REGISTRO"] = pd.to_datetime(df.get("DATA_REGISTRO"), errors="coerce", dayfirst=True)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    credentials = get_credentials(scopes)
+    gc = gspread.authorize(credentials)
+    registros_sheet = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Registros")
+    df = pd.DataFrame(registros_sheet.get_all_records())
+    if "DATA_REGISTRO" in df.columns:
+        df["DATA_REGISTRO"] = pd.to_datetime(df["DATA_REGISTRO"], format="%d/%m/%Y", errors="coerce")
     return df
 
-# ==========================
-# 🔹 PDF
-# ==========================
+def listar_pdfs_paciente(paciente_id_str: str):
+    SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+    creds = get_credentials(SCOPES)
+    service = build('drive', 'v3', credentials=creds)
+
+    PASTA_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
+    query = f"'{PASTA_ID}' in parents and trashed=false and mimeType='application/pdf'"
+
+    arquivos = []
+    page_token = None
+    while True:
+        response = service.files().list(
+            q=query,
+            spaces='drive',
+            fields='nextPageToken, files(id, name, webContentLink)',
+            orderBy='name',
+            pageToken=page_token
+        ).execute()
+        arquivos.extend(response.get('files', []))
+        page_token = response.get('nextPageToken')
+        if not page_token:
+            break
+
+    prefixo = f'P{paciente_id_str}#'
+    return [arq for arq in arquivos if arq['name'].startswith(prefixo)]
+
+# --------------------------------------------
+# 🔹 Geração do PDF com logo
+# --------------------------------------------
 def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    nome_paciente = paciente.get('Nome', 'Paciente')
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        title=f"Ficha de {nome_paciente}",
+        author=usuario_logado,
+        topMargin=0*cm,
+        bottomMargin=0*cm
+    )
 
     styles = getSampleStyleSheet()
     story = []
 
-    def bloco(label, valor):
-        story.append(Paragraph(f"<b>{label}</b>", styles["Heading4"]))
-        story.append(Spacer(1, 4))
-        story.append(Paragraph(valor, styles["Normal"]))
-        story.append(Spacer(1, 10))
+    # Caminho do logo
+    logo_path = Path("assets/ceu_da_boca/logo_embedded.png")
+    if logo_path.exists():
+        # Ajuste da largura (12cm = largura total do PDF ~ A4)
+        story.append(Image(str(logo_path), width=10*cm, height=6*cm))
+        story.append(Spacer(1, 6))
 
-    # Logo
-    logo = Path("assets/ceu_da_boca/logo_embedded.png")
-    if logo.exists():
-        story.append(Image(str(logo), width=10*cm, height=5*cm))
+    # Cabeçalho
+    story.append(Paragraph(f"<b>Ficha de Paciente - {nome_paciente}</b>", styles["Title"]))
+    story.append(Paragraph(
+        f"Gerado em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')} por {usuario_logado}",
+        styles["Normal"]
+    ))
+    story.append(Spacer(1, 12))
 
-    story.append(Paragraph("<b>Ficha do Paciente</b>", styles["Title"]))
-    story.append(Spacer(1, 10))
+    def add_title(text):
+        story.append(Spacer(1, 12))
+        story.append(Paragraph(f"<b>{text}</b>", styles["Heading2"]))
+        story.append(Spacer(1, 8))
 
-    # Dados Clínicos
-    story.append(Paragraph("<b>Dados Clínicos</b>", styles["Heading2"]))
-    story.append(Spacer(1, 10))
+    # 🧾 Dados do Paciente
+    add_title("🧾 Dados do Paciente")
+    for campo in ["Nome", "Idade", "Sexo", "Data", "Endereco", "Filiacao", "Telefone", "Fao"]:
+        story.append(Paragraph(f"<b>{campo}:</b> {paciente.get(campo, '-')}", styles["Normal"]))
+    story.append(Spacer(1, 12))
 
-    bloco("Tipo de Fissura", get_valor(paciente, "TIPO_FISSURA", "TIPO DE FISSURA"))
-    bloco("Diagnóstico", get_valor(paciente, "DIAGNOSTICO"))
-    bloco("Plano de Tratamento", get_valor(paciente, "PLANO_TRATAMENTO"))
+    # 🩺 Dados Clínicos
+    add_title("🩺 Dados Clínicos")
+    for campo in [
+        "Tipo De Fissura", "Historia_Tratamento", "Carac_Oclusais",
+        "Neces_Orto", "Neces_Cirur", "Neces_Odonto", "Outros"
+    ]:
+        story.append(Paragraph(f"<b>{campo.replace('_', ' ')}:</b> {paciente.get(campo, '-')}", styles["Normal"]))
+    story.append(Spacer(1, 12))
 
-    story.append(Spacer(1, 6))
+    # 📜 Evoluções
+    add_title("📜 Evoluções do Paciente")
+    if not evolucoes.empty:
+        evolucoes_sorted = evolucoes.sort_values(by="DATA_REGISTRO", ascending=False)
+        for _, row in evolucoes_sorted.iterrows():
+            data_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else ""
+            story.append(Paragraph(f"<b>Data:</b> {data_str}", styles["Normal"]))
+            story.append(Paragraph(f"<b>Descrição:</b> {row.get('EVOLUCAO','')}", styles["Normal"]))
+            story.append(Paragraph(f"<i>Registrado por:</i> {row.get('USUARIO','')}", styles["Italic"]))
+            story.append(Spacer(1, 8))
+    else:
+        story.append(Paragraph("Nenhuma evolução registrada.", styles["Normal"]))
+    story.append(Spacer(1, 12))
 
-    bloco("História do Tratamento", get_valor(paciente, "HISTORIA_TRATAMENTO"))
-    bloco("Características Oclusais", get_valor(paciente, "CARAC_OCLUSAIS"))
-
-    bloco("Necessidade Ortodôntica", get_valor(paciente, "NECES_ORTO"))
-    bloco("Necessidade Cirúrgica", get_valor(paciente, "NECES_CIRUR"))
-    bloco("Necessidade Odontológica", get_valor(paciente, "NECES_ODONTO"))
-
-    bloco("Outros", get_valor(paciente, "OUTROS"))
-
-    # Evoluções
-    story.append(Paragraph("<b>Evoluções</b>", styles["Heading2"]))
-    story.append(Spacer(1, 10))
-
-    for _, row in evolucoes.iterrows():
-        data = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else ""
-        bloco(f"{data}", row.get("EVOLUCAO", ""))
+    # 📎 Documentos
+    add_title("📎 Documentos Anexados")
+    if arquivos:
+        for arq in arquivos:
+            nome = arq["name"]
+            link = arq.get("webContentLink", "")
+            story.append(Paragraph(f"{nome} - <a href='{link}' color='blue'>{link}</a>", styles["Normal"]))
+    else:
+        story.append(Paragraph("Nenhum documento encontrado.", styles["Normal"]))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
 
-# ==========================
-# 🔹 UI
-# ==========================
+# --------------------------------------------
+# 🔹 Página principal
+# --------------------------------------------
 st.title("🗂️ Ficha de Paciente")
 
-id_paciente = st.query_params.get("idpaciente", "")
-if isinstance(id_paciente, list):
-    id_paciente = id_paciente[0]
+id_paciente_str = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente_str, list):
+    id_paciente_str = id_paciente_str[0]
+id_paciente_str = id_paciente_str.strip()
 
+col_btn1, col_btn2 = st.columns(2)
+with col_btn1:
+    if st.button("🔙 Voltar para Lista de Pacientes"):
+        st.query_params.clear()
+        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+
+# Carrega dados
 df = carregar_dados()
-paciente_df = df[df["ID"].astype(str) == id_paciente]
+df.columns = df.columns.str.strip().str.title()
+paciente_df = df[df["Id"].astype(str) == id_paciente_str]
 
 if paciente_df.empty:
-    st.error("Paciente não encontrado")
+    st.error("❌ Paciente não encontrado.")
     st.stop()
 
 paciente = paciente_df.iloc[0]
 
+# Carregar evoluções e anexos
 df_evolucao = carregar_evolucoes()
-evolucoes = df_evolucao[df_evolucao["PACIENTE_ID"].astype(str) == id_paciente]
+arquivos = listar_pdfs_paciente(id_paciente_str)
+evolucoes_paciente = pd.DataFrame()
+if "PACIENTE_ID" in df_evolucao.columns:
+    evolucoes_paciente = df_evolucao[df_evolucao["PACIENTE_ID"].astype(str) == id_paciente_str]
 
-# ==========================
-# 🩺 Dados Clínicos (UI)
-# ==========================
-with st.expander("🩺 Dados Clínicos", expanded=True):
+with col_btn2:
+    if st.button("🖨️ Imprimir Ficha Clínica"):
+        pdf = gerar_pdf_ficha(paciente, evolucoes_paciente, arquivos, usuario_logado)
+        st.download_button(
+            label="⬇️ Baixar Ficha de Paciente (PDF)",
+            data=pdf,
+            file_name=f"Ficha_{paciente.get('Nome','sem_nome')}.pdf",
+            mime="application/pdf"
+        )
 
-    def campo(label, valor):
-        st.markdown(f"""
-        <div style='margin-bottom:15px'>
-            <b>{label}</b>
-            <div style='margin-top:5px;padding:10px;background:#f8f9fa;border-radius:6px'>
-                {valor}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    campo("🦷 Tipo de Fissura", get_valor(paciente, "TIPO_FISSURA", "TIPO DE FISSURA"))
-
-    st.markdown("---")
-
-    campo("📋 Diagnóstico", get_valor(paciente, "DIAGNOSTICO"))
-
-    st.markdown("---")
-
-    campo("🧭 Plano de Tratamento", get_valor(paciente, "PLANO_TRATAMENTO"))
-
-    st.markdown("---")
-
-    campo("📜 História do Tratamento", get_valor(paciente, "HISTORIA_TRATAMENTO"))
-    campo("🔎 Características Oclusais", get_valor(paciente, "CARAC_OCLUSAIS"))
-
-    st.markdown("---")
-
+# --------------------------------------------
+# 🔹 Expansores (colapsáveis)
+# --------------------------------------------
+with st.expander("🧾 Dados do Paciente", expanded=True):
     col1, col2 = st.columns(2)
-
     with col1:
-        campo("🦷 Necessidade Ortodôntica", get_valor(paciente, "NECES_ORTO"))
-        campo("🦷 Necessidade Odontológica", get_valor(paciente, "NECES_ODONTO"))
-
+        st.write(f"**Nome:** {paciente.get('Nome', '-')}") 
+        st.write(f"**Idade:** {paciente.get('Idade', '-')}") 
+        st.write(f"**Sexo:** {paciente.get('Sexo', '-')}") 
+        st.write(f"**Data de Nascimento:** {paciente.get('Data', '-')}") 
     with col2:
-        campo("🏥 Necessidade Cirúrgica", get_valor(paciente, "NECES_CIRUR"))
-        campo("📌 Outros", get_valor(paciente, "OUTROS"))
+        st.write(f"**Endereço:** {paciente.get('Endereco', '-')}") 
+        st.write(f"**Filiação:** {paciente.get('Filiacao', '-')}") 
+        st.write(f"**Telefone:** {paciente.get('Telefone', '-')}") 
+        st.write(f"**FAO:** {paciente.get('Fao', '-')}")
 
-# ==========================
-# 📜 Evoluções
-# ==========================
-with st.expander("📜 Evoluções", expanded=False):
-    for _, row in evolucoes.iterrows():
-        data = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else ""
-        st.write(f"**{data}** - {row.get('EVOLUCAO','')}")
+with st.expander("🩺 Dados Clínicos", expanded=False):
+    st.write(f"**Tipo de Fissura:** {paciente.get('Tipo De Fissura', '-')}") 
+    st.write(f"**História do Tratamento:** {paciente.get('Historia_Tratamento', '-')}") 
+    st.write(f"**Características Oclusais:** {paciente.get('Carac_Oclusais', '-')}") 
+    st.write(f"**Necessidades Ortodônticas:** {paciente.get('Neces_Orto', '-')}") 
+    st.write(f"**Necessidades Cirúrgicas:** {paciente.get('Neces_Cirur', '-')}") 
+    st.write(f"**Necessidades Odontológicas:** {paciente.get('Neces_Odonto', '-')}") 
+    st.write(f"**Outros:** {paciente.get('Outros', '-')}")
 
-# ==========================
-# 🖨️ PDF
-# ==========================
-if st.button("🖨️ Gerar PDF"):
-    pdf = gerar_pdf_ficha(paciente, evolucoes, [], usuario_logado)
-    st.download_button("Download PDF", pdf, file_name="ficha.pdf")
+with st.expander("📜 Evoluções do Paciente", expanded=False):
+    if not evolucoes_paciente.empty:
+        evolucoes_paciente = evolucoes_paciente.sort_values(by="DATA_REGISTRO", ascending=False)
+        for _, row in evolucoes_paciente.iterrows():
+            data_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else ""
+            st.markdown(f"""
+            <div style='padding:10px; background-color:#f9f9f9; border-left:4px solid #0d6efd; margin-bottom:8px; border-radius:5px;'>
+                <b>📅 {data_str}</b><br>
+                <i>{row.get("EVOLUCAO","")}</i><br>
+                <span style='color:gray;'>👤 {row.get("USUARIO","")}</span>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("Nenhuma evolução registrada para este paciente.")
+
+with st.expander("📎 Documentos Anexados", expanded=False):
+    if not arquivos:
+        st.info("Nenhum arquivo PDF encontrado para este paciente.")
+    else:
+        for arquivo in arquivos:
+            nome = arquivo["name"]
+            file_id = arquivo["id"]
+            link = f"https://drive.google.com/file/d/{file_id}/preview"
+            with st.expander(f"📄 {nome}"):
+                st.components.v1.iframe(link, height=500)
