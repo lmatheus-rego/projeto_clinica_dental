@@ -233,7 +233,6 @@ with st.expander("🩺 Dados Clínicos", expanded=False):
         st.markdown(f"**{label}**")
         st.markdown("---")  # quebra antes
         st.write(valor)
-        st.markdown("<br>", unsafe_allow_html=True)  # espaço depois
 
     campo("🦷 Tipo de Fissura", get_valor_multi(
         paciente, "Tipo De Fissura", "Tipo de Fissura", "TIPO_FISSURA"
