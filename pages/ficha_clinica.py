@@ -128,7 +128,7 @@ def gerar_pdf_ficha(paciente, evolucoes, arquivos, usuario_logado):
     add_title("🩺 Dados Clínicos")
     for campo in [
         "Tipo De Fissura", "Historia_Tratamento", "Carac_Oclusais",
-        "Neces_Orto", "Neces_Cirur", "Neces_Odonto", "Outros"
+        "Neces_Orto", "Neces_Cirur", "Neces_Odonto", "Outros", "Diagnostico", "Plano_Tratamento"
     ]:
         story.append(Paragraph(f"<b>{campo.replace('_', ' ')}:</b> {paciente.get(campo, '-')}", styles["Normal"]))
     story.append(Spacer(1, 12))
@@ -233,9 +233,15 @@ with st.expander("🩺 Dados Clínicos", expanded=False):
         st.markdown(f"**{label}**")
         st.write(valor)
 
-    campo("🦷 Tipo de Fissura", get_valor_multi(
-        paciente, "Tipo De Fissura", "Tipo de Fissura", "TIPO_FISSURA"
-    ))
+        # --- Normalização dos campos ---
+    tipo_fissura = (
+        paciente.get('Tipo De Fissura')
+        or paciente.get('Tipo_Fissura')
+        or paciente.get('TIPO_FISSURA')
+        or "-"
+    )
+
+    campo("🦷 Tipo de Fissura", tipo_fissura)
 
     campo("📜 História do Tratamento", get_valor_multi(
         paciente, "Historia_Tratamento"
