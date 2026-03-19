@@ -113,7 +113,7 @@ total_nao_especificado = (df_pacientes["TIPO_FISSURA"] == "Não Especificado").s
 col1, col2, col3 = st.columns(3)
 col1.metric("👥 Total de Pacientes", total_pacientes)
 col2.metric("📆 Registros de Evolução", atendidos_mes)
-col3.metric("❓ Fissura Não Especificada", total_nao_especificado)
+col3.metric("❓ Fissuras Não Especificadas", total_nao_especificado)
 
 # ==========================
 # 📈 Gráficos
