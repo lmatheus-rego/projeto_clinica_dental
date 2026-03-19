@@ -89,6 +89,14 @@ df_pacientes = carregar_aba("Pacientes")
 df_fila = carregar_aba("Fila")
 df_registros = carregar_aba("Registros")
 
+# Remove linhas completamente vazias ou com espaços
+df_registros = df_registros[
+    ~df_registros.astype(str)
+    .apply(lambda x: x.str.strip())
+    .eq("")
+    .all(axis=1)
+]
+
 # ==========================
 # 📊 Resumo Geral
 # ==========================
