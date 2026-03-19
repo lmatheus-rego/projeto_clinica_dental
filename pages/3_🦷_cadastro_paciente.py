@@ -74,7 +74,6 @@ with st.form("include_paciente"):
         tipo_fissura = st.selectbox(
     "Tipo de Fissura",
     [
-        
         "Pré-forame Unilateral Direita",
         "Pré-forame Unilateral Esquerda",
         "Pré-forame Bilateral",
