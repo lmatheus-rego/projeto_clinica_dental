@@ -197,16 +197,32 @@ with colg2:
 st.markdown("### 📈 Atendimentos ao Longo do Tempo")
 
 if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
-    df_registros["DATA_REGISTRO"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
 
-    df_tempo = df_registros.dropna(subset=["DATA_REGISTRO"]).copy()
-    df_tempo["AnoMes"] = df_tempo["DATA_REGISTRO"].dt.to_period("M").astype(str)
+    # Converter data
+    df_registros["DATA_REGISTRO"] = pd.to_datetime(
+        df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True
+    )
 
-    df_group = df_tempo.groupby("AnoMes")["PACIENTE_ID"].nunique().reset_index()
-    df_group.columns = ["Ano-Mês", "Pacientes"]
+    # NÃO remover registros — apenas criar agrupamento
+    df_registros["AnoMes"] = df_registros["DATA_REGISTRO"].dt.to_period("M").astype(str)
 
-    fig = px.line(df_group, x="Ano-Mês", y="Pacientes", markers=True)
-    fig.update_yaxes(range=[0, df_group["Pacientes"].max() + 1])
+    # Contar TODAS as linhas (sem nunique)
+    df_group = df_registros.groupby("AnoMes").size().reset_index(name="Registros")
+
+    # Ordenar corretamente
+    df_group = df_group.sort_values("AnoMes")
+
+    # Criar gráfico
+    fig = px.line(
+        df_group,
+        x="AnoMes",
+        y="Registros",
+        markers=True,
+        title="Total de Registros por Mês"
+    )
+
+    # Garantir eixo começando em 0
+    fig.update_yaxes(range=[0, df_group["Registros"].max() + 1])
 
     st.plotly_chart(fig, use_container_width=True)
 
