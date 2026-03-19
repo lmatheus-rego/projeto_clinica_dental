@@ -71,7 +71,25 @@ with st.form("include_paciente"):
             telefone = st.text_input("Telefone(s)", placeholder="(92) 99999-9999 / 99999-9999", key="telefone")
     
     with st.expander("⚕️ Dados Clínicos", expanded=True):
-        tipo_fissura = st.text_input("Tipo de Fissura", key="tipo_fissura")
+        tipo_fissura = st.selectbox(
+    "Tipo de Fissura",
+    [
+        "",
+        "Pré-forame Unilateral Direita",
+        "Pré-forame Unilateral Esquerda",
+        "Pré-forame Bilateral",
+        "Transforame Unilateral Direita",
+        "Transforame Unilateral Esquerda",
+        "Transforame Bilateral",
+        "Pós-forame Completa",
+        "Pós-forame Incompleta",
+        "Fissura Rara da Face",
+        "Fissura Mediana",
+        "Não Especificado",
+        "Outros"
+    ],
+    key="tipo_fissura"
+)
         historia = st.text_area("História do Tratamento", key="historia")
 
     submit = st.form_submit_button("💾 Salvar Paciente")
