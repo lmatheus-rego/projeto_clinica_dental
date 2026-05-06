@@ -108,7 +108,7 @@ nao_esp = (df_pacientes["TIPO_FISSURA"] == "Não Especificado").sum()
 m1, m2, m3 = st.columns(3)
 with m1: st.markdown(f'<div class="metric-card"><div class="metric-label">👥 Total Pacientes</div><div class="metric-value">{total_p}</div></div>', unsafe_allow_html=True)
 with m2: st.markdown(f'<div class="metric-card"><div class="metric-label">🦷 Evoluções</div><div class="metric-value">{total_e}</div></div>', unsafe_allow_html=True)
-with m3: st.markdown(f'<div class="metric-card"><div class="metric-label">⚠️ Fissuras Pendentes</div><div class="metric-value">{nao_esp}</div></div>', unsafe_allow_html=True)
+with m3: st.markdown(f'<div class="metric-card"><div class="metric-label">⚠️ Pacientes sem Fissura Definida</div><div class="metric-value">{nao_esp}</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
