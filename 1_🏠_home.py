@@ -3,227 +3,234 @@ import datetime
 import pandas as pd
 import time
 import gspread
+import plotly.express as px
+import plotly.graph_objects as go
 from google.oauth2.service_account import Credentials
 from pathlib import Path
-import plotly.express as px
 from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
-from assets.ceu_da_boca.header_footer import render_header, render_footer
-
-css_path = "assets/ceu_da_boca/style.css"
-
-with open(css_path, "r", encoding="utf-8") as f:
-    css_content = f.read()
 
 # ==========================
-# Funções de páginas dinâmica
+# Configuração da Página & CSS Profissional
 # ==========================
-def add_page(main_script_path_str, page_name):
-    pages = get_pages(main_script_path_str)
-    main_script_path = Path(main_script_path_str)
-    pages_dir = main_script_path.parent / "pages"
-    script_path = [f for f in list(pages_dir.glob("*.py")) + list(main_script_path.parent.glob("*.py"))
-                   if f.name.find(page_name) != -1][0]
-    script_path_str = str(script_path.resolve())
-    pi, pn = page_icon_and_name(script_path)
-    psh = calc_md5(script_path_str)
-    pages[psh] = {
-        "page_script_hash": psh,
-        "page_name": pn,
-        "icon": pi,
-        "script_path": script_path_str,
-    }
-    _on_pages_changed.send()
+st.set_page_config(
+    page_title="Projeto Céu da Boca | Dashboard", 
+    page_icon="🦷", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-def delete_page(main_script_path_str, page_name):
-    current_pages = get_pages(main_script_path_str)
-    for key, value in list(current_pages.items()):
-        if value['page_name'] == page_name:
-            del current_pages[key]
-            break
-    _on_pages_changed.send()
+# Injeção de CSS para um visual mais limpo e moderno
+st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
+        }
 
-# ==========================
-# Configuração inicial
-# ==========================
-st.set_page_config(page_title="Projeto Céu da Boca", page_icon="🦷", layout="wide")
-st.sidebar.title("📅 Fila de Atendimentos de Hoje")
-st.title("Projeto Céu da Boca")
+        /* Estilização dos Cards de Métricas */
+        .metric-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #007bff;
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        .metric-title {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .metric-value {
+            color: #1e293b;
+            font-size: 28px;
+            font-weight: 700;
+        }
 
-delete_page("1_🏠_home", "ficha_clinica")
-delete_page("1_🏠_home", "alterar_paciente")
-delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
-delete_page("1_🏠_home", "evolucao_tratamento")
-
-# ==========================
-# Função para carregar dados
-# ==========================
-def carregar_aba(nome_aba, tentativas=3, delay=3):
-    for i in range(tentativas):
-        try:
-            scopes = [
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive",
-            ]
-            credentials = Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=scopes
-            )
-            gc = gspread.authorize(credentials)
-            sheet = gc.open_by_key(
-                "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
-            ).worksheet(nome_aba)
-            dados = sheet.get_all_records()
-            return pd.DataFrame(dados)
-        except Exception as e:
-            if i < tentativas - 1:
-                st.warning(f"⚠️ Erro ao carregar '{nome_aba}', tentando novamente ({i+1}/{tentativas})...")
-                time.sleep(delay)
-            else:
-                st.error(f"❌ Falha ao carregar '{nome_aba}': {e}")
-                return pd.DataFrame()
+        /* Ajustes de espaçamento */
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        
+        /* Sidebar customizada */
+        section[data-testid="stSidebar"] {
+            background-color: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # ==========================
-# Carregar dados
+# Funções de Gerenciamento de Páginas
 # ==========================
-df_pacientes = carregar_aba("Pacientes")
-df_fila = carregar_aba("Fila")
-df_registros = carregar_aba("Registros")
+def delete_page(page_name):
+    try:
+        pages = get_pages("1_🏠_home.py")
+        for key, value in list(pages.items()):
+            if value['page_name'] == page_name:
+                del pages[key]
+        _on_pages_changed.send()
+    except:
+        pass
 
-# Remove linhas completamente vazias ou com espaços
-df_registros = df_registros[
-    ~df_registros.astype(str)
-    .apply(lambda x: x.str.strip())
-    .eq("")
-    .all(axis=1)
-]
+# Limpeza de páginas de navegação interna (se necessário)
+for p in ["ficha_clinica", "alterar_paciente", "inserir_exames_e_diagnosticos", "evolucao_tratamento"]:
+    delete_page(p)
 
 # ==========================
-# 📊 Resumo Geral
+# Conexão e Dados
 # ==========================
-st.markdown("## 📊 Resumo Geral")
+@st.cache_data(ttl=600) # Cache de 10 minutos para performance
+def carregar_dados_gsheets():
+    try:
+        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+        gc = gspread.authorize(credentials)
+        sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
+        
+        df_p = pd.DataFrame(sh.worksheet("Pacientes").get_all_records())
+        df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
+        df_r = pd.DataFrame(sh.worksheet("Registros").get_all_records())
+        
+        # Limpeza básica
+        df_r = df_r[~df_r.astype(str).apply(lambda x: x.str.strip()).eq("").all(axis=1)]
+        return df_p, df_f, df_r
+    except Exception as e:
+        st.error(f"Erro de conexão: {e}")
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
+df_pacientes, df_fila, df_registros = carregar_dados_gsheets()
+
+# ==========================
+# Sidebar: Fila de Atendimento
+# ==========================
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3467/3467739.png", width=80) # Ícone Odonto
+    st.markdown("### 📋 Fila de Hoje")
+    hoje = datetime.date.today()
+    
+    if not df_fila.empty:
+        df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
+        fila_hoje = df_fila[df_fila["DATA"] == hoje]
+        
+        if not fila_hoje.empty:
+            for _, row in fila_hoje.iterrows():
+                p_id = str(row["PACIENTE_ID"]).strip()
+                p_info = df_pacientes[df_pacientes["Id"].astype(str).str.strip() == p_id]
+                nome = p_info.iloc[0]["Nome"] if not p_info.empty else f"ID: {p_id}"
+                st.info(f"👤 **{nome}**\n\nStatus: {row.get('STATUS', 'Aguardando')}")
+        else:
+            st.write("✨ Ninguém na fila no momento.")
+    st.markdown("---")
+
+# ==========================
+# Cabeçalho Principal
+# ==========================
+c_title1, c_title2 = st.columns([4, 1])
+with c_title1:
+    st.title("🦷 Dashboard Projeto Céu da Boca")
+    st.markdown("_Análise de indicadores e acompanhamento clínico_")
+with c_title2:
+    st.write("")
+    if st.button("🔄 Atualizar Dados"):
+        st.cache_data.clear()
+        st.rerun()
+
+st.markdown("---")
+
+# ==========================
+# 📊 Seção de Métricas (Cards Customizados)
+# ==========================
 total_pacientes = len(df_pacientes)
-atendidos_mes = len(df_registros)
+total_evolucao = len(df_registros)
+fissura_col = "TIPO_FISSURA" if "TIPO_FISSURA" in df_pacientes.columns else "Tipo_Fissura"
+df_pacientes[fissura_col] = df_pacientes[fissura_col].astype(str).replace(["", "nan"], "Não Especificado")
+nao_especificado = (df_pacientes[fissura_col] == "Não Especificado").sum()
 
-df_pacientes["TIPO_FISSURA"] = df_pacientes.get("TIPO_FISSURA", "").astype(str).str.strip()
-df_pacientes["TIPO_FISSURA"] = df_pacientes["TIPO_FISSURA"].replace("", "Não Especificado").fillna("Não Especificado")
+m1, m2, m3 = st.columns(3)
 
-total_nao_especificado = (df_pacientes["TIPO_FISSURA"] == "Não Especificado").sum()
+def render_metric(col, title, value, icon):
+    col.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">{icon} {title}</div>
+            <div class="metric-value">{value}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns(3)
-col1.metric("👥 Total de Pacientes", total_pacientes)
-col2.metric("📆 Registros de Evolução", atendidos_mes)
-col3.metric("❓ Fissuras Não Especificadas", total_nao_especificado)
+render_metric(m1, "Total de Pacientes", total_pacientes, "👥")
+render_metric(m2, "Registros Clínicos", total_evolucao, "📄")
+render_metric(m3, "Fissuras s/ Dados", nao_especificado, "⚠️")
+
+st.write("")
+st.write("")
 
 # ==========================
-# 📈 Gráficos
+# 📈 Área de Gráficos Históricos
 # ==========================
-st.markdown("## 📈 Gráficos Históricos")
+tab1, tab2 = st.tabs(["📊 Distribuição Clínica", "📈 Evolução Temporal"])
 
-# --- CORES POR GRUPO ---
-def cor_fissura(tipo):
-    if tipo == "Não Especificado":
-        return "#E57373"  # vermelho
-    if tipo in ["Pré-forame Unilateral Direita", "Pré-forame Unilateral Esquerda", "Pré-forame Bilateral"]:
-        return "#AED6F1"
-    if tipo in ["Transforame Unilateral Direita", "Transforame Unilateral Esquerda", "Transforame Bilateral"]:
-        return "#A9DFBF"
-    if tipo in ["Pós-forame Completa", "Pós-forame Incompleta"]:
-        return "#F9E79F"
-    if tipo == "Fissura Rara da Face":
-        return "#D7BDE2"
-    if tipo == "Fissura Mediana":
-        return "#F5CBA7"
-    return "#D5DBDB"
+with tab1:
+    col_f1, col_f2 = st.columns([2, 1])
+    
+    with col_f1:
+        st.markdown("#### Distribuição por Tipo de Fissura")
+        df_fiss = df_pacientes[fissura_col].value_counts().reset_index()
+        df_fiss.columns = ["Tipo", "Qtd"]
+        
+        fig_bar = px.bar(
+            df_fiss, x="Qtd", y="Tipo", orientation='h',
+            text="Qtd", color="Tipo",
+            color_discrete_sequence=px.colors.qualitative.Safe,
+            template="plotly_white"
+        )
+        fig_bar.update_layout(showlegend=False, height=450, margin=dict(l=0, r=0, t=10, b=10))
+        st.plotly_chart(fig_bar, use_container_width=True)
 
-# --- Tipo de Fissura ---
-st.markdown("### 🦷 Pacientes por Tipo de Fissura")
+    with col_f2:
+        st.markdown("#### Perfil Demográfico")
+        sexo_col = "SEXO" if "SEXO" in df_pacientes.columns else "Sexo"
+        df_sexo = df_pacientes[sexo_col].value_counts().reset_index()
+        df_sexo.columns = ["Sexo", "Qtd"]
+        
+        fig_pie = px.pie(
+            df_sexo, names="Sexo", values="Qtd",
+            hole=0.5,
+            color_discrete_sequence=["#AED6F1", "#F5B7B1"],
+            template="plotly_white"
+        )
+        fig_pie.update_layout(margin=dict(l=0, r=0, t=10, b=10), height=400)
+        st.plotly_chart(fig_pie, use_container_width=True)
 
-df_fissura = df_pacientes["TIPO_FISSURA"].value_counts().reset_index()
-df_fissura.columns = ["Tipo", "Qtd"]
+with tab2:
+    st.markdown("#### Atendimentos ao Longo do Tempo")
+    if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
+        df_registros["DATA_DT"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
+        df_registros["Mês/Ano"] = df_registros["DATA_DT"].dt.to_period("M").astype(str)
+        df_evol = df_registros.groupby("Mês/Ano").size().reset_index(name="Atendimentos")
+        
+        fig_line = px.area(
+            df_evol, x="Mês/Ano", y="Atendimentos",
+            markers=True,
+            color_discrete_sequence=["#007bff"],
+            template="plotly_white"
+        )
+        fig_line.update_layout(height=400)
+        st.plotly_chart(fig_line, use_container_width=True)
+    else:
+        st.warning("Dados de evolução insuficientes para gerar gráfico temporal.")
 
-nao = df_fissura[df_fissura["Tipo"] == "Não Especificado"]
-outros = df_fissura[df_fissura["Tipo"] != "Não Especificado"].sort_values("Qtd", ascending=False)
-df_fissura = pd.concat([outros, nao])
-
-df_fissura["Cor"] = df_fissura["Tipo"].apply(cor_fissura)
-
-fig = px.bar(df_fissura, x="Tipo", y="Qtd", text="Qtd", color="Tipo",
-             color_discrete_map={t: cor_fissura(t) for t in df_fissura["Tipo"]},
-             title="Distribuição por Tipo de Fissura")
-
-st.plotly_chart(fig, use_container_width=True)
-
-# --- Pizzas ---
-colg1, colg2 = st.columns(2)
-
-with colg1:
-    st.markdown("### 🧒🏾👴🏻 Faixa Etária dos Pacientes")
-    if "DATA" in df_pacientes.columns:
-        df_pacientes["DATA"] = pd.to_datetime(df_pacientes["DATA"], errors="coerce", dayfirst=True)
-        hoje = pd.Timestamp.today()
-        df_pacientes["IDADE"] = (hoje - df_pacientes["DATA"]).dt.days // 365
-
-        bins = [0, 9, 20, 29, 59, 200]
-        labels = ["0-9", "10-20", "21-29", "30-59", "60+"]
-        df_pacientes["FAIXA"] = pd.cut(df_pacientes["IDADE"], bins=bins, labels=labels)
-
-        df_idade = df_pacientes["FAIXA"].value_counts().reset_index()
-        df_idade.columns = ["Faixa", "Qtd"]
-
-        fig = px.pie(df_idade, names="Faixa", values="Qtd",
-                     color_discrete_sequence=px.colors.qualitative.Pastel,
-                     title="Distribuição por Faixa Etária")
-        st.plotly_chart(fig, use_container_width=True)
-
-with colg2:
-    st.markdown("### ♂️♀️ Pacientes por Sexo")
-
-    df_sexo = df_pacientes["SEXO"].value_counts().reset_index()
-    df_sexo.columns = ["Sexo", "Qtd"]
-
-    cores = {
-        "Masculino": "#AED6F1",
-        "Feminino": "#F5B7B1"
-    }
-
-    fig = px.pie(df_sexo, names="Sexo", values="Qtd",
-                 color="Sexo", color_discrete_map=cores,
-                 title="Distribuição por Sexo")
-
-    st.plotly_chart(fig, use_container_width=True)
-
-# --- Linha Temporal ---
-st.markdown("### 📈 Atendimentos ao Longo do Tempo")
-
-if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
-
-    # Converter data
-    df_registros["DATA_REGISTRO"] = pd.to_datetime(
-        df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True
-    )
-
-    # NÃO remover registros — apenas criar agrupamento
-    df_registros["AnoMes"] = df_registros["DATA_REGISTRO"].dt.to_period("M").astype(str)
-
-    # Contar TODAS as linhas (sem nunique)
-    df_group = df_registros.groupby("AnoMes").size().reset_index(name="Registros")
-
-    # Ordenar corretamente
-    df_group = df_group.sort_values("AnoMes")
-
-    # Criar gráfico
-    fig = px.line(
-        df_group,
-        x="AnoMes",
-        y="Registros",
-        markers=True,
-        title="Total de Registros por Mês"
-    )
-
-    # Garantir eixo começando em 0
-    fig.update_yaxes(range=[0, df_group["Registros"].max() + 1])
-
-    st.plotly_chart(fig, use_container_width=True)
-
-render_footer()
+# ==========================
+# Rodapé
+# ==========================
+st.markdown("---")
+col_f1, col_f2 = st.columns(2)
+with col_f1:
+    st.caption(f"Sistema Gerencial - Projeto Céu da Boca v2.0 | Último acesso: {datetime.datetime.now().strftime('%H:%M:%S')}")
+with col_f2:
+    st.markdown("<div style='text-align: right'>🔍 <i>Dados protegidos conforme LGPD</i></div>", unsafe_allow_html=True)
