@@ -4,90 +4,67 @@ import pandas as pd
 import time
 import gspread
 import plotly.express as px
-import plotly.graph_objects as go
 from google.oauth2.service_account import Credentials
 from pathlib import Path
 from streamlit.source_util import page_icon_and_name, calc_md5, get_pages, _on_pages_changed
 
 # ==========================
-# Configuração da Página & CSS Profissional
+# Configuração da Página
 # ==========================
 st.set_page_config(
-    page_title="Projeto Céu da Boca | Dashboard", 
+    page_title="Céu da Boca - FAO/UFAM", 
     page_icon="🦷", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Injeção de CSS para um visual mais limpo e moderno
+# CSS Profissional e Customizado
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
-        html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-        }
+        * { font-family: 'Inter', sans-serif; }
 
-        /* Estilização dos Cards de Métricas */
+        /* Estilização do Título Profissional */
+        .main-header {
+            background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
+            padding: 2rem;
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .main-header h1 { margin: 0; font-weight: 800; font-size: 2.2rem; }
+        .main-header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 1rem; }
+
+        /* Cards de Métricas */
         .metric-card {
-            background-color: #ffffff;
+            background-color: white;
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border-left: 5px solid #007bff;
-            transition: transform 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-top: 4px solid #004a99;
+            text-align: center;
         }
-        .metric-card:hover {
-            transform: translateY(-5px);
-        }
-        .metric-title {
-            color: #64748b;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .metric-value {
-            color: #1e293b;
-            font-size: 28px;
-            font-weight: 700;
-        }
+        .metric-label { color: #64748b; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }
+        .metric-value { color: #1e293b; font-size: 2rem; font-weight: 700; margin-top: 5px; }
 
-        /* Ajustes de espaçamento */
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
-        
-        /* Sidebar customizada */
-        section[data-testid="stSidebar"] {
-            background-color: #f8fafc;
-            border-right: 1px solid #e2e8f0;
+        /* Ajustes de Tabs */
+        .stTabs [data-baseweb="tab-list"] { gap: 24px; }
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            padding-top: 10px;
+            font-weight: 600;
+            font-size: 1rem;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================
-# Funções de Gerenciamento de Páginas
+# Funções de Dados
 # ==========================
-def delete_page(page_name):
-    try:
-        pages = get_pages("1_🏠_home.py")
-        for key, value in list(pages.items()):
-            if value['page_name'] == page_name:
-                del pages[key]
-        _on_pages_changed.send()
-    except:
-        pass
-
-# Limpeza de páginas de navegação interna (se necessário)
-for p in ["ficha_clinica", "alterar_paciente", "inserir_exames_e_diagnosticos", "evolucao_tratamento"]:
-    delete_page(p)
-
-# ==========================
-# Conexão e Dados
-# ==========================
-@st.cache_data(ttl=600) # Cache de 10 minutos para performance
-def carregar_dados_gsheets():
+@st.cache_data(ttl=300)
+def carregar_dados():
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
@@ -98,21 +75,134 @@ def carregar_dados_gsheets():
         df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
         df_r = pd.DataFrame(sh.worksheet("Registros").get_all_records())
         
-        # Limpeza básica
-        df_r = df_r[~df_r.astype(str).apply(lambda x: x.str.strip()).eq("").all(axis=1)]
         return df_p, df_f, df_r
     except Exception as e:
-        st.error(f"Erro de conexão: {e}")
+        st.error(f"Erro ao conectar ao Google Sheets: {e}")
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-df_pacientes, df_fila, df_registros = carregar_dados_gsheets()
+df_pacientes, df_fila, df_registros = carregar_dados()
+
+# Limpeza e Padronização
+if not df_pacientes.empty:
+    df_pacientes.columns = df_pacientes.columns.str.strip().str.upper()
+    fiss_col = "TIPO_FISSURA"
+    df_pacientes[fiss_col] = df_pacientes[fiss_col].astype(str).str.strip().replace(["", "nan", "None"], "Não Especificado")
 
 # ==========================
-# Sidebar: Fila de Atendimento
+# Cabeçalho Institucional
+# ==========================
+st.markdown("""
+    <div class="main-header">
+        <h1>Céu da Boca — FAO/UFAM</h1>
+        <p>Faculdade de Odontologia | Universidade Federal do Amazonas</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# ==========================
+# Métricas Principais
+# ==========================
+total_p = len(df_pacientes)
+total_e = len(df_registros)
+nao_esp = (df_pacientes["TIPO_FISSURA"] == "Não Especificado").sum()
+
+m1, m2, m3 = st.columns(3)
+with m1: st.markdown(f'<div class="metric-card"><div class="metric-label">👥 Total Pacientes</div><div class="metric-value">{total_p}</div></div>', unsafe_allow_html=True)
+with m2: st.markdown(f'<div class="metric-card"><div class="metric-label">🦷 Evoluções</div><div class="metric-value">{total_e}</div></div>', unsafe_allow_html=True)
+with m3: st.markdown(f'<div class="metric-card"><div class="metric-label">⚠️ Fissuras Pendentes</div><div class="metric-value">{nao_esp}</div></div>', unsafe_allow_html=True)
+
+st.write("")
+
+# ==========================
+# Área de Gráficos
+# ==========================
+tab_clinico, tab_demo, tab_hist = st.tabs(["📋 Perfil Clínico", "👥 Demografia", "📈 Histórico"])
+
+with tab_clinico:
+    st.subheader("Distribuição por Tipo de Fissura")
+    
+    # Preparação dos dados para o gráfico de barras
+    df_fiss = df_pacientes["TIPO_FISSURA"].value_counts().reset_index()
+    df_fiss.columns = ["Tipo", "Qtd"]
+    
+    # Lógica de Ordenação: "Não Especificado" sempre por último
+    df_normal = df_fiss[df_fiss["Tipo"] != "Não Especificado"].sort_values("Qtd", ascending=False)
+    df_extra = df_fiss[df_fiss["Tipo"] == "Não Especificado"]
+    df_final_fiss = pd.concat([df_normal, df_extra])
+    
+    # Mapeamento de cores (Não especificado em Vermelho)
+    cores_map = {tipo: "#004a99" for tipo in df_final_fiss["Tipo"]}
+    cores_map["Não Especificado"] = "#E57373"
+    
+    fig_fiss = px.bar(
+        df_final_fiss, x="Tipo", y="Qtd", 
+        color="Tipo", color_discrete_map=cores_map,
+        text="Qtd", template="plotly_white"
+    )
+    fig_fiss.update_layout(showlegend=False, height=500, xaxis_title="", yaxis_title="Nº de Pacientes")
+    st.plotly_chart(fig_fiss, use_container_width=True)
+
+with tab_demo:
+    col_d1, col_d2 = st.columns(2)
+    
+    with col_d1:
+        st.subheader("Gênero")
+        sexo_col = "SEXO" if "SEXO" in df_pacientes.columns else df_pacientes.columns[1]
+        df_sexo = df_pacientes[sexo_col].value_counts().reset_index()
+        df_sexo.columns = ["Sexo", "Qtd"]
+        
+        fig_sexo = px.pie(
+            df_sexo, names="Sexo", values="Qtd",
+            color_discrete_sequence=["#AED6F1", "#F5B7B1"],
+            hole=0.4, template="plotly_white"
+        )
+        st.plotly_chart(fig_sexo, use_container_width=True)
+        
+    with col_d2:
+        st.subheader("Faixa Etária")
+        if "DATA" in df_pacientes.columns:
+            # Cálculo de idade
+            df_pacientes["DATA_DT"] = pd.to_datetime(df_pacientes["DATA"], errors="coerce", dayfirst=True)
+            hoje_dt = pd.Timestamp.now()
+            df_pacientes["IDADE"] = (hoje_dt - df_pacientes["DATA_DT"]).dt.days // 365
+            
+            bins = [0, 12, 18, 30, 60, 120]
+            labels = ["Infantil (0-12)", "Adolescente (13-18)", "Jovem Adulto (19-30)", "Adulto (31-60)", "Idoso (60+)"]
+            df_pacientes["FAIXA"] = pd.cut(df_pacientes["IDADE"], bins=bins, labels=labels)
+            
+            df_idade = df_pacientes["FAIXA"].value_counts().reindex(labels).reset_index()
+            df_idade.columns = ["Faixa", "Qtd"]
+            
+            fig_idade = px.bar(
+                df_idade, x="Faixa", y="Qtd", 
+                text="Qtd", color_discrete_sequence=["#004a99"],
+                template="plotly_white"
+            )
+            st.plotly_chart(fig_idade, use_container_width=True)
+
+with tab_hist:
+    st.subheader("Evolução de Atendimentos")
+    if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
+        df_registros["DATA_DT"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
+        df_registros["Mês"] = df_registros["DATA_DT"].dt.to_period("M").astype(str)
+        df_hist = df_registros.groupby("Mês").size().reset_index(name="Atendimentos")
+        
+        fig_hist = px.line(
+            df_hist, x="Mês", y="Atendimentos", 
+            markers=True, line_shape="spline",
+            template="plotly_white", color_discrete_sequence=["#004a99"]
+        )
+        st.plotly_chart(fig_hist, use_container_width=True)
+    else:
+        st.info("Aguardando mais registros de evolução para gerar o histórico.")
+
+# ==========================
+# Sidebar: Fila do Dia
 # ==========================
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3467/3467739.png", width=80) # Ícone Odonto
-    st.markdown("### 📋 Fila de Hoje")
+    st.markdown("### 🏛️ Institucional")
+    st.caption("Universidade Federal do Amazonas\nFaculdade de Odontologia")
+    st.markdown("---")
+    st.markdown("### 📅 Fila de Atendimento")
     hoje = datetime.date.today()
     
     if not df_fila.empty:
@@ -120,117 +210,19 @@ with st.sidebar:
         fila_hoje = df_fila[df_fila["DATA"] == hoje]
         
         if not fila_hoje.empty:
-            for _, row in fila_hoje.iterrows():
-                p_id = str(row["PACIENTE_ID"]).strip()
-                p_info = df_pacientes[df_pacientes["Id"].astype(str).str.strip() == p_id]
-                nome = p_info.iloc[0]["Nome"] if not p_info.empty else f"ID: {p_id}"
-                st.info(f"👤 **{nome}**\n\nStatus: {row.get('STATUS', 'Aguardando')}")
+            for _, r in fila_hoje.iterrows():
+                p_id = str(r["PACIENTE_ID"]).strip()
+                p_nome = df_pacientes[df_pacientes["ID"].astype(str).str.strip() == p_id]["NOME"].values
+                nome_display = p_nome[0] if len(p_nome) > 0 else f"ID: {p_id}"
+                st.success(f"👤 **{nome_display}**\n\nStatus: {r.get('STATUS', 'Agendado')}")
         else:
-            st.write("✨ Ninguém na fila no momento.")
+            st.write("Sem atendimentos hoje.")
+    
     st.markdown("---")
-
-# ==========================
-# Cabeçalho Principal
-# ==========================
-c_title1, c_title2 = st.columns([4, 1])
-with c_title1:
-    st.title("🦷 Dashboard Projeto Céu da Boca")
-    st.markdown("_Análise de indicadores e acompanhamento clínico_")
-with c_title2:
-    st.write("")
-    if st.button("🔄 Atualizar Dados"):
+    if st.button("🔄 Sincronizar Google Sheets"):
         st.cache_data.clear()
         st.rerun()
 
-st.markdown("---")
-
-# ==========================
-# 📊 Seção de Métricas (Cards Customizados)
-# ==========================
-total_pacientes = len(df_pacientes)
-total_evolucao = len(df_registros)
-fissura_col = "TIPO_FISSURA" if "TIPO_FISSURA" in df_pacientes.columns else "Tipo_Fissura"
-df_pacientes[fissura_col] = df_pacientes[fissura_col].astype(str).replace(["", "nan"], "Não Especificado")
-nao_especificado = (df_pacientes[fissura_col] == "Não Especificado").sum()
-
-m1, m2, m3 = st.columns(3)
-
-def render_metric(col, title, value, icon):
-    col.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-title">{icon} {title}</div>
-            <div class="metric-value">{value}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-render_metric(m1, "Total de Pacientes", total_pacientes, "👥")
-render_metric(m2, "Registros Clínicos", total_evolucao, "📄")
-render_metric(m3, "Fissuras s/ Dados", nao_especificado, "⚠️")
-
-st.write("")
-st.write("")
-
-# ==========================
-# 📈 Área de Gráficos Históricos
-# ==========================
-tab1, tab2 = st.tabs(["📊 Distribuição Clínica", "📈 Evolução Temporal"])
-
-with tab1:
-    col_f1, col_f2 = st.columns([2, 1])
-    
-    with col_f1:
-        st.markdown("#### Distribuição por Tipo de Fissura")
-        df_fiss = df_pacientes[fissura_col].value_counts().reset_index()
-        df_fiss.columns = ["Tipo", "Qtd"]
-        
-        fig_bar = px.bar(
-            df_fiss, x="Qtd", y="Tipo", orientation='h',
-            text="Qtd", color="Tipo",
-            color_discrete_sequence=px.colors.qualitative.Safe,
-            template="plotly_white"
-        )
-        fig_bar.update_layout(showlegend=False, height=450, margin=dict(l=0, r=0, t=10, b=10))
-        st.plotly_chart(fig_bar, use_container_width=True)
-
-    with col_f2:
-        st.markdown("#### Perfil Demográfico")
-        sexo_col = "SEXO" if "SEXO" in df_pacientes.columns else "Sexo"
-        df_sexo = df_pacientes[sexo_col].value_counts().reset_index()
-        df_sexo.columns = ["Sexo", "Qtd"]
-        
-        fig_pie = px.pie(
-            df_sexo, names="Sexo", values="Qtd",
-            hole=0.5,
-            color_discrete_sequence=["#AED6F1", "#F5B7B1"],
-            template="plotly_white"
-        )
-        fig_pie.update_layout(margin=dict(l=0, r=0, t=10, b=10), height=400)
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-with tab2:
-    st.markdown("#### Atendimentos ao Longo do Tempo")
-    if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
-        df_registros["DATA_DT"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
-        df_registros["Mês/Ano"] = df_registros["DATA_DT"].dt.to_period("M").astype(str)
-        df_evol = df_registros.groupby("Mês/Ano").size().reset_index(name="Atendimentos")
-        
-        fig_line = px.area(
-            df_evol, x="Mês/Ano", y="Atendimentos",
-            markers=True,
-            color_discrete_sequence=["#007bff"],
-            template="plotly_white"
-        )
-        fig_line.update_layout(height=400)
-        st.plotly_chart(fig_line, use_container_width=True)
-    else:
-        st.warning("Dados de evolução insuficientes para gerar gráfico temporal.")
-
-# ==========================
 # Rodapé
-# ==========================
 st.markdown("---")
-col_f1, col_f2 = st.columns(2)
-with col_f1:
-    st.caption(f"Sistema Gerencial - Projeto Céu da Boca v2.0 | Último acesso: {datetime.datetime.now().strftime('%H:%M:%S')}")
-with col_f2:
-    st.markdown("<div style='text-align: right'>🔍 <i>Dados protegidos conforme LGPD</i></div>", unsafe_allow_html=True)
+st.caption(f"Céu da Boca Dashboard | FAO-UFAM | Gerado em: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
