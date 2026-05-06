@@ -140,7 +140,7 @@ with st.sidebar:
 # ==========================
 st.markdown("""
     <div class="main-header">
-        <h1>🦷 Cadastrar Evolução</h1>
+        <h1>🦷 Evolução no Tratamento</h1>
     </div>
 """, unsafe_allow_html=True)
 
