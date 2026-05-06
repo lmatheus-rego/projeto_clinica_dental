@@ -160,7 +160,6 @@ with st.sidebar:
 st.markdown("""
     <div class="main-header">
         <h1>Céu da Boca — Gestão de Pacientes</h1>
-        <p>Faculdade de Odontologia da Universidade Federal do Amazonas</p>
     </div>
 """, unsafe_allow_html=True)
 
