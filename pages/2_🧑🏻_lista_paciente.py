@@ -17,14 +17,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Profissional de Alta Densidade (UI/UX)
+# CSS Profissional de Alta Precisão
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         
         * { font-family: 'Inter', sans-serif; }
 
-        /* Cabeçalho Padrão Profissional */
+        /* Cabeçalho Gradient */
         .main-header {
             background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
             padding: 1.2rem 2rem;
@@ -33,45 +33,54 @@ st.markdown("""
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; letter-spacing: -0.5px; }
+        .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; }
         .main-header p { margin: 0; opacity: 0.8; font-size: 0.85rem; }
 
         /* Estilização da Tabela */
         .table-header {
             background-color: #f1f5f9;
-            padding: 8px 15px;
+            padding: 10px 15px;
             border-radius: 8px;
             font-weight: 700;
             color: #475569;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             margin-bottom: 5px;
             display: flex;
+        }
+
+        /* Ajuste de Fontes de Dados (Fissura e Status) */
+        .data-text {
+            font-size: 13.5px !important;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .status-text {
+            font-size: 13px !important;
+            font-weight: 700;
             text-transform: uppercase;
         }
 
-        /* Linha de Paciente Ultra Estreita */
-        .patient-row-container {
-            border-bottom: 1px solid #f1f5f9;
-            padding: 4px 0;
-            transition: background 0.2s;
-        }
-        .patient-row-container:hover { background-color: #f8fafc; }
-
-        /* Botões de Ação Mini */
+        /* Botões de Ação Otimizados */
         div[data-testid="column"] button {
-            font-size: 10px !important;
-            padding: 0px 4px !important;
-            height: 24px !important;
-            min-height: 24px !important;
-            border-radius: 4px !important;
+            font-size: 12px !important; /* Fonte maior para legibilidade */
+            padding: 0px 2px !important;
+            height: 30px !important;
+            border-radius: 6px !important;
             width: 100%;
+            border: 1px solid #e2e8f0 !important;
+            background-color: white !important;
+            color: #004a99 !important;
+        }
+        div[data-testid="column"] button:hover {
+            background-color: #004a99 !important;
+            color: white !important;
         }
 
         /* Badges */
         .badge {
-            padding: 1px 6px;
+            padding: 2px 8px;
             border-radius: 10px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
         }
         .badge-m { background-color: #e0f2fe; color: #0369a1; }
@@ -80,7 +89,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================
-# Funções de Páginas e Dados
+# Funções de Redirecionamento e Dados
 # ==========================
 def add_page(main_script_path_str, page_name):
     pages = get_pages(main_script_path_str)
@@ -94,8 +103,8 @@ def add_page(main_script_path_str, page_name):
         psh = calc_md5(script_path_str)
         pages[psh] = {"page_script_hash": psh, "page_name": pn, "icon": pi, "script_path": script_path_str}
         _on_pages_changed.send()
-    except IndexError:
-        st.error(f"Página '{page_name}' não encontrada no diretório.")
+    except:
+        pass
 
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
@@ -116,24 +125,25 @@ def carregar_dados():
     except:
         return pd.DataFrame(), pd.DataFrame(), None
 
-# Limpar menu lateral no carregamento
-MAIN_SCRIPT = "1_🏠_home.py" # Ajuste conforme o nome do seu arquivo principal
+# Nome do arquivo principal para controle de páginas
+MAIN_SCRIPT = "1_🏠_home.py" 
+
+# Esconder páginas do menu lateral ao carregar
 for p in ["ficha_clinica", "alterar_paciente", "inserir_exames_e_diagnosticos", "evolucao_tratamento"]:
     delete_page(MAIN_SCRIPT, p)
 
 df_pacientes, df_fila, gc = carregar_dados()
 
-# Padronização
 if not df_pacientes.empty:
     df_pacientes.columns = df_pacientes.columns.str.strip().str.upper()
 
 # ==========================
-# Sidebar e Cabeçalho
+# Sidebar e Pesquisa
 # ==========================
 with st.sidebar:
-    st.markdown("### 🏛️ Institucional\nFAO/UFAM")
+    st.markdown("### 🏛️ FAO/UFAM")
     st.markdown("---")
-    st.markdown("### 📅 Fila de Hoje")
+    st.markdown("### 📅 Fila do Dia")
     hoje = datetime.date.today()
     if not df_fila.empty:
         df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
@@ -143,36 +153,35 @@ with st.sidebar:
             p_nome = df_pacientes[df_pacientes["ID"].astype(str).str.strip() == p_id]["NOME"].values
             st.info(f"👤 **{p_nome[0] if len(p_nome)>0 else p_id}**")
     
-    st.markdown("---")
-    if st.button("🔄 Sincronizar Dados", use_container_width=True):
+    if st.button("🔄 Sincronizar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
 st.markdown("""
     <div class="main-header">
         <h1>Céu da Boca — Gestão de Pacientes</h1>
-        <p>Sistema de Prontuários | Faculdade de Odontologia da UFAM</p>
+        <p>Faculdade de Odontologia da Universidade Federal do Amazonas</p>
     </div>
 """, unsafe_allow_html=True)
 
-# Busca Profissional
 c_search, _ = st.columns([1.5, 2])
-busca = c_search.text_input("🔍 Localizar paciente:", placeholder="Digite nome, FAO ou status...")
+busca = c_search.text_input("🔍 Buscar paciente:", placeholder="Nome, FAO ou status...")
 
 if busca:
     df_pacientes = df_pacientes[df_pacientes.apply(lambda r: r.astype(str).str.lower().str.contains(busca.lower()).any(), axis=1)]
 
 # ==========================
-# Lista de Pacientes
+# Lista de Pacientes (Tabela Otimizada)
 # ==========================
+# Reajustei as proporções: Ações agora ocupa 3.5 em vez de 4.5
 st.markdown("""
     <div class="table-header">
         <div style="flex: 2.2;">PACIENTE / FAO</div>
         <div style="flex: 0.5;">IDADE</div>
         <div style="flex: 0.4;">GEN</div>
-        <div style="flex: 1.4;">FISSURA</div>
-        <div style="flex: 1.0;">STATUS</div>
-        <div style="flex: 4.5; text-align: center;">AÇÕES</div>
+        <div style="flex: 1.8;">TIPO DE FISSURA</div>
+        <div style="flex: 1.2;">STATUS</div>
+        <div style="flex: 3.5; text-align: center;">AÇÕES</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -181,57 +190,56 @@ for idx, row in df_pacientes.iterrows():
     nome = str(row.get("NOME", "-")).strip().upper()
     fao = row.get("FAO", "-")
     sexo = str(row.get("SEXO", "-")).upper()[:1]
+    fissura = row.get("TIPO_FISSURA", "-")
+    status = row.get("STATUS", "-")
     
     with st.container():
-        # Linha principal
-        c1, c2, c3, c4, c5, c_btns = st.columns([2.2, 0.5, 0.4, 1.4, 1.0, 4.5])
+        # Layout da Linha
+        c1, c2, c3, c4, c5, c_btns = st.columns([2.2, 0.5, 0.4, 1.8, 1.2, 3.5])
         
         c1.markdown(f"**{nome}**<br><small style='color:#64748b'>FAO: {fao}</small>", unsafe_allow_html=True)
-        c2.markdown(f"<div style='padding-top:6px'>{row.get('IDADE', '-')}a</div>", unsafe_allow_html=True)
+        c2.markdown(f"<div style='padding-top:10px'>{row.get('IDADE', '-')}a</div>", unsafe_allow_html=True)
         
         g_style = "badge-m" if sexo == "M" else "badge-f"
-        c3.markdown(f"<div style='padding-top:6px'><span class='badge {g_style}'>{sexo}</span></div>", unsafe_allow_html=True)
+        c3.markdown(f"<div style='padding-top:8px'><span class='badge {g_style}'>{sexo}</span></div>", unsafe_allow_html=True)
         
-        c4.markdown(f"<div style='padding-top:6px; font-size:11px'>{row.get('TIPO_FISSURA', '-')}</div>", unsafe_allow_html=True)
+        # Colunas com fonte aumentada conforme solicitado
+        c4.markdown(f"<div class='data-text' style='padding-top:8px'>{fissura}</div>", unsafe_allow_html=True)
         
-        status_color = "#10b981" if "ATIVO" in str(row.get("STATUS")).upper() else "#94a3b8"
-        c5.markdown(f"<div style='padding-top:6px; font-size:10px; color:{status_color}; font-weight:700'>{row.get('STATUS', '-')}</div>", unsafe_allow_html=True)
+        st_color = "#10b981" if "ATIVO" in str(status).upper() else "#94a3b8"
+        c5.markdown(f"<div class='status-text' style='padding-top:8px; color:{st_color}'>{status}</div>", unsafe_allow_html=True)
 
         with c_btns:
-            st.write("") # Spacer
-            # Agrupamento de 5 botões em mini colunas
-            b1, b2, b3, b4, b5 = st.columns(5)
+            st.write("") # Alinhador vertical
+            b_cols = st.columns(5)
             
-            if b1.button("📄 Ficha", key=f"f_{p_id}_{idx}"):
-                st.query_params = {"idpaciente": p_id}
+            if b_cols[0].button("📄 Ficha", key=f"f_{p_id}_{idx}", help="Ver Ficha"):
+                st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "ficha_clinica")
                 st.switch_page("pages/ficha_clinica.py")
             
-            if b2.button("✏️ Edit", key=f"e_{p_id}_{idx}"):
-                st.query_params = {"idpaciente": p_id}
+            if b_cols[1].button("✏️ Edit", key=f"e_{p_id}_{idx}", help="Editar Dados"):
+                st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "alterar_paciente")
                 st.switch_page("pages/alterar_paciente.py")
 
-            if b3.button("🧾 Exam", key=f"x_{p_id}_{idx}"):
-                st.query_params = {"idpaciente": p_id}
+            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Exames"):
+                st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "inserir_exames_e_diagnosticos")
                 st.switch_page("pages/inserir_exames_e_diagnosticos.py")
                 
-            if b4.button("🦷 Evol", key=f"v_{p_id}_{idx}"):
-                st.query_params = {"idpaciente": p_id}
+            if b_cols[3].button("🦷 Evol", key=f"v_{p_id}_{idx}", help="Evolução"):
+                st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "evolucao_tratamento")
                 st.switch_page("pages/evolucao_tratamento.py")
                 
-            if b5.button("📅 Agnd", key=f"a_{p_id}_{idx}"):
+            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar Hoje"):
                 try:
                     sheet_f = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
                     sheet_f.append_row([p_id, hoje.strftime("%d/%m/%Y"), "AGENDADO"])
-                    st.toast(f"✅ {nome} na fila!", icon="📅")
+                    st.toast(f"✅ {nome} agendado!", icon="📅")
                     time.sleep(0.5)
                     st.rerun()
                 except: st.error("Erro")
 
-    st.markdown("<div style='margin-bottom:2px'></div>", unsafe_allow_html=True)
-
-st.markdown("---")
-st.caption(f"Total: {len(df_pacientes)} registros.")
+    st.markdown("<hr style='margin:2px 0; opacity:0.1'>", unsafe_allow_html=True)
