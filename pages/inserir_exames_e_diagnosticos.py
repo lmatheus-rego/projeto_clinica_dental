@@ -16,68 +16,68 @@ from streamlit.source_util import (
 )
 
 # ==========================
-# 🎨 PROTOCOLO DE DESIGN FAO/UFAM
+# 🎨 Configuração e Design Elegante
 # ==========================
 st.set_page_config(
-    page_title="Diagnóstico e Exames - FAO/UFAM", 
+    page_title="Exames e Diagnóstico - FAO/UFAM", 
     page_icon="🦷", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS de Alta Fidelidade
+# CSS Profissional Padrão "Céu da Boca"
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        html, body, [class*="css"], .stMarkdown { font-family: 'Inter', sans-serif !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
 
+        /* Cabeçalho Gradient */
         .main-header {
-            background: linear-gradient(90deg, #004a99 0%, #007bff 100%) !important;
-            padding: 1.5rem 2rem !important;
-            border-radius: 15px !important;
-            margin-bottom: 2rem !important;
-            box-shadow: 0 4px 15px rgba(0,74,153,0.2) !important;
+            background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
+            padding: 1.2rem 2rem;
+            border-radius: 12px;
+            color: white !important;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .main-header h1 { color: white !important; font-weight: 700 !important; font-size: 1.8rem !important; margin: 0 !important; border: none !important; }
-        .main-header p { color: rgba(255,255,255,0.9) !important; font-size: 0.9rem !important; margin: 5px 0 0 0 !important; }
+        .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; color: white !important; border: none; }
+        .main-header p { margin: 0; opacity: 0.8; font-size: 0.85rem; color: white !important; }
 
-        .patient-info-card {
-            background-color: #f8fafc !important;
-            padding: 1.2rem !important;
-            border-radius: 12px !important;
-            border: 1px solid #e2e8f0 !important;
-            margin-bottom: 1.5rem !important;
-            display: flex;
-            justify-content: space-between;
+        /* Card de Informações do Paciente */
+        .patient-box {
+            background-color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
         }
-        .info-group { flex: 1; }
-        .info-label { color: #64748b !important; font-size: 0.7rem !important; font-weight: 700 !important; text-transform: uppercase !important; }
-        .info-value { color: #1e293b !important; font-size: 1rem !important; font-weight: 700 !important; }
+        .record-label { color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+        .record-value { color: #1e293b; font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; }
 
-        .form-section {
-            font-size: 1.05rem !important;
-            font-weight: 700 !important;
-            color: #004a99 !important;
-            margin: 2rem 0 1rem 0 !important;
-            padding-left: 12px !important;
-            border-left: 4px solid #004a99 !important;
+        /* Estilo do Formulário */
+        div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
+        
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #004a99;
+            margin: 1.5rem 0 10px 0;
+            border-left: 4px solid #004a99;
+            padding-left: 10px;
         }
 
-        .stButton > button {
+        /* Botão Confirmar Original mas com Estilo */
+        button[kind="primaryFormSubmit"] {
             background-color: #004a99 !important;
             color: white !important;
-            border-radius: 8px !important;
-            font-weight: 600 !important;
-            height: 45px !important;
             width: 100% !important;
-            border: none !important;
+            height: 45px !important;
+            font-weight: 700 !important;
         }
-        
-        [data-testid="stForm"] { border: none !important; padding: 0 !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# ----------------- Funções de Back-end -----------------
+# ----------------- Funções Originais -----------------
 
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
@@ -87,159 +87,173 @@ def delete_page(main_script_path_str, page_name):
             break
     _on_pages_changed.send()
 
-@st.cache_data(ttl=300)
-def carregar_dados_full():
+def carregar_dados():
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    svc_info = {k: v.replace('\\n','\n') if k=='private_key' else v for k,v in st.secrets['gcp_service_account'].items()}
+    service_account_info = {
+        "type": st.secrets["gcp_service_account"]["type"],
+        "project_id": st.secrets["gcp_service_account"]["project_id"],
+        "private_key_id": st.secrets["gcp_service_account"]["private_key_id"],
+        "private_key": st.secrets["gcp_service_account"]["private_key"].replace('\\n', '\n'),
+        "client_email": st.secrets["gcp_service_account"]["client_email"],
+        "client_id": st.secrets["gcp_service_account"]["client_id"],
+        "auth_uri": st.secrets["gcp_service_account"]["auth_uri"],
+        "token_uri": st.secrets["gcp_service_account"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["gcp_service_account"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["gcp_service_account"]["client_x509_cert_url"],
+    }
     
-    # CRIAMOS DUAS CREDENCIAIS INDEPENDENTES PARA EVITAR CONFLITO DE SESSÃO
-    creds_drive = Credentials.from_service_account_info(svc_info, scopes=scopes)
-    creds_sheets = Credentials.from_service_account_info(svc_info, scopes=scopes)
+    # Credenciais para gspread
+    credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+    gc = gspread.authorize(credentials)
     
-    gc = gspread.authorize(creds_sheets)
-    sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
+    # Credenciais limpas para o Drive (Para evitar o erro AuthorizedSession)
+    creds_drive = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+
+    SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJj97cs" # Sua Planilha
+    sheet = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").sheet1
+
+    df = pd.DataFrame(sheet.get_all_records())
+    df.columns = df.columns.str.strip().str.upper()
     
-    df_p = pd.DataFrame(sh.sheet1.get_all_records())
-    df_p.columns = df_p.columns.str.strip().str.upper()
-    df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
-    df_f.columns = df_f.columns.str.strip().str.upper()
-    
-    return df_p, df_f, sh.sheet1, creds_drive
+    # Carregar fila para a sidebar
+    try:
+        sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
+        df_fila = pd.DataFrame(sh.worksheet("Fila").get_all_records())
+        df_fila.columns = df_fila.columns.str.strip().str.upper()
+    except:
+        df_fila = pd.DataFrame()
 
-df_p, df_f, sheet_ref, google_creds_drive = carregar_dados_full()
+    return df, df_fila, sheet, creds_drive
 
-# ----------------- Gestão de ID (Session State) -----------------
-id_query = st.query_params.get("idpaciente", "")
-if isinstance(id_query, list): id_query = id_query[0]
+# ----------------- Execução de Dados -----------------
+df, df_fila, sheet, credentials_drive = carregar_dados()
 
-if id_query:
-    st.session_state.id_diagnostico = str(id_query).strip()
-
-if "id_diagnostico" in st.session_state:
-    id_p_str = st.session_state.id_diagnostico
-else:
-    st.error("❌ Paciente não identificado.")
-    st.stop()
-
-# ----------------- Sidebar e Navegação -----------------
+# Sidebar Padrão
 with st.sidebar:
     st.markdown("### 🏛️ FAO/UFAM\n**Céu da Boca**")
     st.markdown("---")
     st.markdown("### 📅 Fila de Hoje")
     hoje = datetime.now().date()
-    if not df_f.empty:
-        df_f["DATA_DT"] = pd.to_datetime(df_f["DATA"], dayfirst=True, errors="coerce").dt.date
-        fila_atual = df_f[df_f["DATA_DT"] == hoje]
-        for _, r in fila_atual.iterrows():
+    if not df_fila.empty:
+        df_fila["DATA_DT"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
+        fila_hoje = df_fila[df_fila["DATA_DT"] == hoje]
+        for _, r in fila_hoje.iterrows():
             pid = str(r["PACIENTE_ID"]).strip()
-            nome_p = df_p[df_p["ID"].astype(str).str.strip() == pid]["NOME"].values
+            nome_p = df[df["ID"].astype(str).str.strip() == pid]["NOME"].values
             st.info(f"👤 **{nome_p[0] if len(nome_p)>0 else pid}**")
-    
+    st.markdown("---")
     if st.button("🔄 Sincronizar"):
         st.cache_data.clear()
         st.rerun()
 
-if st.button("⬅️ Voltar para Lista"):
+# ----------------- Função Voltar Original -----------------
+if st.button("🔙 Voltar para lista de pacientes"):
     st.query_params.clear()
-    if "id_diagnostico" in st.session_state: del st.session_state.id_diagnostico
-    try:
-        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
-    except:
-        st.switch_page("pages/2_lista_paciente.py")
+    delete_page("1_🏠_home", "inserir_exames_e_diagnosticos")
+    st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
-# ----------------- UI Principal -----------------
-paciente_data = df_p[df_p["ID"].astype(str) == id_p_str]
-if paciente_data.empty:
-    st.error("❌ Paciente não localizado.")
+# ----------------- Identificação -----------------
+id_paciente_str = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente_str, list): id_paciente_str = id_paciente_str[0]
+id_paciente_str = str(id_paciente_str).strip()
+
+paciente_df = df[df["ID"].astype(str) == id_paciente_str]
+if paciente_df.empty:
+    st.error("❌ Paciente não encontrado.")
     st.stop()
 
-info = paciente_data.iloc[0]
+paciente_info = paciente_df.iloc[0]
 
+# UI de Identificação
 st.markdown(f"""
     <div class="main-header">
-        <h1>🧾 Atualizar Documentos e Diagnóstico</h1>
-        <p>Faculdade de Odontologia - UFAM</p>
+        <h1>Atualizar Documentos e Diagnóstico</h1>
+        <p>Prontuário Digital - Faculdade de Odontologia</p>
     </div>
 """, unsafe_allow_html=True)
 
-st.markdown(f"""
-    <div class="patient-info-card">
-        <div class="info-group">
-            <div class="info-label">Paciente</div>
-            <div class="info-value">{info['NOME']}</div>
-        </div>
-        <div class="info-group">
-            <div class="info-label">FAO</div>
-            <div class="info-value">{info['FAO']}</div>
-        </div>
-        <div class="info-group">
-            <div class="info-label">Idade</div>
-            <div class="info-value">{info['IDADE']} anos</div>
-        </div>
-        <div class="info-group">
-            <div class="info-label">Status</div>
-            <div class="info-value" style="color:#10b981">{info['STATUS']}</div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown('<div class="patient-box">', unsafe_allow_html=True)
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown('<p class="record-label">Paciente</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="record-value">{paciente_info["NOME"]}</p>', unsafe_allow_html=True)
+with c2:
+    st.markdown('<p class="record-label">FAO</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="record-value">{paciente_info["FAO"]}</p>', unsafe_allow_html=True)
+with c3:
+    st.markdown('<p class="record-label">Idade</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="record-value">{paciente_info["IDADE"]} anos</p>', unsafe_allow_html=True)
+with c4:
+    st.markdown('<p class="record-label">Status</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="record-value">{paciente_info["STATUS"]}</p>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-# ----------------- Formulário -----------------
-DRIVE_FOLDER_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
+# ----------------- Formulário (Estrutura Original) -----------------
+PASTA_DRIVE_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
 
-with st.form("form_diag_fao"):
-    st.markdown('<div class="form-section">🩺 Avaliação Clínica</div>', unsafe_allow_html=True)
-    cl, cr = st.columns(2)
-    with cl:
-        fissura = st.text_area("Tipo de Fissura", value=info.get("TIPO_FISSURA", ""), height=100)
-        oclusais = st.text_area("Características Oclusais", value=info.get("CARAC_OCLUSAIS", ""), height=100)
-        odonto = st.text_area("Necessidades Odontológicas", value=info.get("NECES_ODONTO", ""), height=100)
-        plano = st.text_area("Plano de Tratamento", value=info.get("PLANO_TRATAMENTO", ""), height=100)
-    with cr:
-        historia = st.text_area("Histórico do Tratamento", value=info.get("HISTORIA_TRATAMENTO", ""), height=100)
-        orto = st.text_area("Necessidades Ortodônticas", value=info.get("NECES_ORTO", ""), height=100)
-        cirur = st.text_area("Necessidades Cirúrgicas", value=info.get("NECES_CIRUR", ""), height=100)
-        diagnostico = st.text_area("Diagnóstico Final", value=info.get("DIAGNOSTICO", ""), height=100)
+with st.form(key="diagnostico_paciente"):
+    st.markdown('<p class="section-title">🩺 Avaliação Clínica e Planejamento</p>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        input_tipo_fissura = st.text_area("**Tipo de Fissura:**", value=paciente_info.get("TIPO_FISSURA", ""), height=100)
+        input_oclusais = st.text_area("**Características Oclusais:**", value=paciente_info.get("CARAC_OCLUSAIS", ""), height=100)
+        input_odonto = st.text_area("**Necessidades Odontológicas:**", value=paciente_info.get("NECES_ODONTO", ""), height=100)
+        input_outros = st.text_area("**Outros:**", value=paciente_info.get("OUTROS", ""), height=100)
+        input_plano = st.text_area("**Plano de Tratamento:**", value=paciente_info.get("PLANO_TRATAMENTO", ""), height=100)
+    
+    with col2:
+        input_historia_tratamento = st.text_area("**Histórico do Tratamento:**", value=paciente_info.get("HISTORIA_TRATAMENTO", ""), height=100)
+        input_orto = st.text_area("**Necessidades Ortodônticas:**", value=paciente_info.get("NECES_ORTO", ""), height=100)
+        input_cirur = st.text_area("**Necessidades Cirúrgicas:**", value=paciente_info.get("NECES_CIRUR", ""), height=100)
+        input_diagnostico = st.text_area("**Diagnóstico:**", value=paciente_info.get("DIAGNOSTICO", ""), height=100)
+        input_docs = st.file_uploader("**Inserir Exames:**", type=["pdf"], accept_multiple_files=True)
 
-    st.markdown('<div class="form-section">📂 Documentação</div>', unsafe_allow_html=True)
-    outros = st.text_area("Observações", value=info.get("OUTROS", ""), height=80)
-    docs_input = st.file_uploader("Upload Exames (PDF)", type=["pdf"], accept_multiple_files=True)
+    submit = st.form_submit_button("Confirmar")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.form_submit_button("💾 SALVAR ALTERAÇÕES"):
-        with st.spinner("Processando salvamento..."):
-            try:
-                # 1. Atualizar Planilha
-                idx = paciente_data.index[0]
-                df_p.at[idx, "TIPO_FISSURA"] = fissura
-                df_p.at[idx, "HISTORIA_TRATAMENTO"] = historia
-                df_p.at[idx, "NECES_ODONTO"] = odonto
-                df_p.at[idx, "CARAC_OCLUSAIS"] = oclusais
-                df_p.at[idx, "OUTROS"] = outros
-                df_p.at[idx, "PLANO_TRATAMENTO"] = plano
-                df_p.at[idx, "NECES_ORTO"] = orto
-                df_p.at[idx, "NECES_CIRUR"] = cirur
-                df_p.at[idx, "DIAGNOSTICO"] = diagnostico
+# ----------------- Lógica de Salvamento Original (Corrigida) -----------------
+if submit:
+    with st.spinner("Salvando alterações..."):
+        try:
+            # Atualiza os dados do paciente no dataframe
+            idx = paciente_df.index[0]
+            df.at[idx, "TIPO_FISSURA"] = input_tipo_fissura
+            df.at[idx, "HISTORIA_TRATAMENTO"] = input_historia_tratamento
+            df.at[idx, "NECES_ODONTO"] = input_odonto
+            df.at[idx, "CARAC_OCLUSAIS"] = input_oclusais
+            df.at[idx, "OUTROS"] = input_outros
+            df.at[idx, "PLANO_TRATAMENTO"] = input_plano
+            df.at[idx, "NECES_ORTO"] = input_orto
+            df.at[idx, "NECES_CIRUR"] = input_cirur
+            df.at[idx, "DIAGNOSTICO"] = input_diagnostico
 
-                sheet_ref.update([df_p.columns.values.tolist()] + df_p.values.tolist())
+            # Atualiza a planilha (Usando a lista de colunas para garantir ordem)
+            sheet.update([df.columns.values.tolist()] + df.values.tolist())
 
-                # 2. Upload Google Drive
-                if docs_input:
-                    # USAMOS A CREDENCIAL PURA (google_creds_drive) QUE NÃO PASSOU PELO GSPREAD
-                    drive_svc = build("drive", "v3", credentials=google_creds_drive, static_discovery=False)
-                    
-                    for arq in docs_input:
-                        ts = datetime.now().strftime("%Y%m%d_%H%M")
-                        nome_f = f"P{id_p_str}#{ts}_{arq.name}"
-                        
-                        # Criamos um novo buffer para cada arquivo
-                        file_content = arq.getvalue()
-                        media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype="application/pdf")
-                        meta = {"name": nome_f, "parents": [DRIVE_FOLDER_ID]}
-                        
-                        drive_svc.files().create(body=meta, media_body=media).execute()
+            # Upload para o Google Drive com a credencial corrigida
+            if input_docs:
+                # build() agora usa a credencial limpa
+                drive_service = build("drive", "v3", credentials=credentials_drive, static_discovery=False)
+                for arquivo in input_docs:
+                    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                    nome_arquivo = f"P{id_paciente_str}#{timestamp}_{arquivo.name}"
 
-                st.toast("✅ Dados e arquivos salvos com sucesso!")
-                time.sleep(1)
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erro ao salvar: {e}")
+                    # Leitura segura do arquivo para o Drive
+                    media = MediaIoBaseUpload(io.BytesIO(arquivo.read()), mimetype="application/pdf")
+                    file_metadata = {
+                        "name": nome_arquivo,
+                        "parents": [PASTA_DRIVE_ID]
+                    }
+
+                    drive_service.files().create(
+                        body=file_metadata,
+                        media_body=media,
+                        fields="id"
+                    ).execute()
+
+            st.success("✅ Paciente atualizado com sucesso!")
+            time.sleep(1.5)
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"Erro ao salvar: {e}")
