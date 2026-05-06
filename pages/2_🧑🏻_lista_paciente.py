@@ -192,7 +192,7 @@ for idx, row in df_pacientes.iterrows():
                 add_page("1_🏠_home", "alterar_paciente")
                 st.switch_page("pages/alterar_paciente.py")
 
-            if b3.button("🧾 Dados Clinicos", key=f"x_{p_id}_{idx}"):
+            if b3.button("🧾 Dados Clinicos"):
                 st.query_params = {"idpaciente": p_id}
                 add_page("1_🏠_home", "inserir_exames_e_diagnosticos")
                 st.switch_page("pages/inserir_exames_e_diagnosticos.py")
