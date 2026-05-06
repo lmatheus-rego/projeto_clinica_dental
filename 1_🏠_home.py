@@ -21,8 +21,8 @@ st.set_page_config(
 # Paleta de Cores Padrão
 COR_PRIMARIA = "#004a99"  # Azul Institucional
 COR_ALERTA = "#E57373"    # Vermelho Suave para "Não Especificado"
-COR_MASCULINO = "#AED6F1"
-COR_FEMININO = "#F5B7B1"
+COR_MASCULINO = "#3D69BB"
+COR_FEMININO = "#EB92CD"
 
 # CSS Profissional e Customizado
 st.markdown(f"""
