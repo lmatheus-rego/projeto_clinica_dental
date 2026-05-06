@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS de Alta Fidelidade (Inter Font + Blue Gradient)
+# CSS de Alta Fidelidade
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -52,7 +52,7 @@ st.markdown("""
         }
         .info-group { flex: 1; }
         .info-label { color: #64748b !important; font-size: 0.7rem !important; font-weight: 700 !important; text-transform: uppercase !important; }
-        .info-value { color: #1e293b !important; font-size: 1rem !important; font-weight: 700 !important; margin-top: 2px !important; }
+        .info-value { color: #1e293b !important; font-size: 1rem !important; font-weight: 700 !important; }
 
         .form-section {
             font-size: 1.05rem !important;
@@ -74,7 +74,6 @@ st.markdown("""
         }
         
         [data-testid="stForm"] { border: none !important; padding: 0 !important; }
-        .stTextArea textarea { border-radius: 8px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -92,10 +91,12 @@ def delete_page(main_script_path_str, page_name):
 def carregar_dados_full():
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     svc_info = {k: v.replace('\\n','\n') if k=='private_key' else v for k,v in st.secrets['gcp_service_account'].items()}
-    creds = Credentials.from_service_account_info(svc_info, scopes=scopes)
     
-    # IMPORTANTE: gc é usado para gspread, creds (puro) será usado para o Drive API
-    gc = gspread.authorize(creds)
+    # CRIAMOS DUAS CREDENCIAIS INDEPENDENTES PARA EVITAR CONFLITO DE SESSÃO
+    creds_drive = Credentials.from_service_account_info(svc_info, scopes=scopes)
+    creds_sheets = Credentials.from_service_account_info(svc_info, scopes=scopes)
+    
+    gc = gspread.authorize(creds_sheets)
     sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
     
     df_p = pd.DataFrame(sh.sheet1.get_all_records())
@@ -103,9 +104,9 @@ def carregar_dados_full():
     df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
     df_f.columns = df_f.columns.str.strip().str.upper()
     
-    return df_p, df_f, sh.sheet1, creds
+    return df_p, df_f, sh.sheet1, creds_drive
 
-df_p, df_f, sheet_ref, google_creds = carregar_dados_full()
+df_p, df_f, sheet_ref, google_creds_drive = carregar_dados_full()
 
 # ----------------- Gestão de ID (Session State) -----------------
 id_query = st.query_params.get("idpaciente", "")
@@ -117,7 +118,7 @@ if id_query:
 if "id_diagnostico" in st.session_state:
     id_p_str = st.session_state.id_diagnostico
 else:
-    st.error("❌ Paciente não identificado. Volte à lista.")
+    st.error("❌ Paciente não identificado.")
     st.stop()
 
 # ----------------- Sidebar e Navegação -----------------
@@ -138,7 +139,6 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
-# Botão Voltar (Caminho Robusto)
 if st.button("⬅️ Voltar para Lista"):
     st.query_params.clear()
     if "id_diagnostico" in st.session_state: del st.session_state.id_diagnostico
@@ -147,15 +147,14 @@ if st.button("⬅️ Voltar para Lista"):
     except:
         st.switch_page("pages/2_lista_paciente.py")
 
-# ----------------- Processamento de Dados -----------------
+# ----------------- UI Principal -----------------
 paciente_data = df_p[df_p["ID"].astype(str) == id_p_str]
 if paciente_data.empty:
-    st.error("❌ Paciente não localizado no banco de dados.")
+    st.error("❌ Paciente não localizado.")
     st.stop()
 
 info = paciente_data.iloc[0]
 
-# ----------------- UI -----------------
 st.markdown(f"""
     <div class="main-header">
         <h1>🧾 Atualizar Documentos e Diagnóstico</h1>
@@ -187,7 +186,7 @@ st.markdown(f"""
 # ----------------- Formulário -----------------
 DRIVE_FOLDER_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
 
-with st.form("form_diag"):
+with st.form("form_diag_fao"):
     st.markdown('<div class="form-section">🩺 Avaliação Clínica</div>', unsafe_allow_html=True)
     cl, cr = st.columns(2)
     with cl:
@@ -207,9 +206,9 @@ with st.form("form_diag"):
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.form_submit_button("💾 SALVAR ALTERAÇÕES"):
-        with st.spinner("Salvando..."):
+        with st.spinner("Processando salvamento..."):
             try:
-                # 1. Atualizar DF
+                # 1. Atualizar Planilha
                 idx = paciente_data.index[0]
                 df_p.at[idx, "TIPO_FISSURA"] = fissura
                 df_p.at[idx, "HISTORIA_TRATAMENTO"] = historia
@@ -221,25 +220,25 @@ with st.form("form_diag"):
                 df_p.at[idx, "NECES_CIRUR"] = cirur
                 df_p.at[idx, "DIAGNOSTICO"] = diagnostico
 
-                # 2. Planilha
                 sheet_ref.update([df_p.columns.values.tolist()] + df_p.values.tolist())
 
-                # 3. Drive (FIX para o erro AuthorizedSession)
+                # 2. Upload Google Drive
                 if docs_input:
-                    # Recriamos o serviço do Drive usando as credenciais puras (google_creds)
-                    drive_svc = build("drive", "v3", credentials=google_creds, static_discovery=False)
+                    # USAMOS A CREDENCIAL PURA (google_creds_drive) QUE NÃO PASSOU PELO GSPREAD
+                    drive_svc = build("drive", "v3", credentials=google_creds_drive, static_discovery=False)
+                    
                     for arq in docs_input:
                         ts = datetime.now().strftime("%Y%m%d_%H%M")
                         nome_f = f"P{id_p_str}#{ts}_{arq.name}"
                         
-                        # Prepara o upload
-                        media = MediaIoBaseUpload(io.BytesIO(arq.read()), mimetype="application/pdf", resumable=True)
+                        # Criamos um novo buffer para cada arquivo
+                        file_content = arq.getvalue()
+                        media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype="application/pdf")
                         meta = {"name": nome_f, "parents": [DRIVE_FOLDER_ID]}
                         
-                        # Executa a criação
-                        drive_svc.files().create(body=meta, media_body=media, fields="id").execute()
+                        drive_svc.files().create(body=meta, media_body=media).execute()
 
-                st.toast("✅ Dados salvos com sucesso!")
+                st.toast("✅ Dados e arquivos salvos com sucesso!")
                 time.sleep(1)
                 st.rerun()
             except Exception as e:
