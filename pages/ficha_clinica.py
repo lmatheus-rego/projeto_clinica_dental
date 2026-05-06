@@ -199,10 +199,10 @@ if isinstance(id_p, list): id_p = id_p[0]
 id_p = str(id_p).strip()
 
 paciente_df = df_p[df_p["ID"].astype(str) == id_p]
-if paciente_df.empty:
-    st.warning("⚠️ Selecione um paciente na lista para visualizar os detalhes.")
-    if st.button("⬅️ Voltar para Lista"): st.switch_page("pages/2_🧑🏻_lista_paciente.py")
-    st.stop()
+#if paciente_df.empty:
+#    st.warning("⚠️ Selecione um paciente na lista para visualizar os detalhes.")
+#    if st.button("⬅️ Voltar para Lista"): st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+#    st.stop()
 
 paciente = paciente_df.iloc[0]
 evolucoes = df_r[df_r["PACIENTE_ID"].astype(str) == id_p] if not df_r.empty else pd.DataFrame()
