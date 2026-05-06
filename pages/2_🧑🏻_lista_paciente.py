@@ -24,22 +24,29 @@ st.markdown("""
         
         * { font-family: 'Inter', sans-serif; }
 
-        /* Cabeçalho Gradient */
+        /* Cabeçalho Gradient - Texto Branco e Ícone */
         .main-header {
             background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
             padding: 1.2rem 2rem;
             border-radius: 12px;
-            color: white !important; /* Força o branco */
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         .main-header h1 { 
             margin: 0; 
             font-weight: 700; 
             font-size: 1.6rem; 
-            color: white !important; 
+            color: #FFFFFF !important; 
         }
-        .main-header p { margin: 0; opacity: 0.8; font-size: 0.85rem; color: white !important; }
+        .main-header p { 
+            margin: 0; 
+            opacity: 0.9; 
+            font-size: 0.85rem; 
+            color: #FFFFFF !important; 
+        }
 
         /* Estilização da Tabela */
         .table-header {
@@ -64,7 +71,7 @@ st.markdown("""
             text-transform: uppercase;
         }
 
-        /* Botões de Ação Otimizados */
+        /* Botões de Ação Mini */
         div[data-testid="column"] button {
             font-size: 11px !important;
             padding: 0px 2px !important;
@@ -132,22 +139,30 @@ def carregar_dados():
         
         # Carregar Fila
         df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
+        df_f.columns = df_f.columns.str.strip().str.upper()
         
-        # Carregar Evoluções para contagem
+        # Carregar Evoluções
         df_r = pd.DataFrame(sh.worksheet("Registros").get_all_records())
         df_r.columns = df_r.columns.str.strip().str.upper()
         
-        # Processar contagem de evoluções
+        # FIX: Garantir que as colunas de ID sejam strings para o merge
         if not df_r.empty and 'PACIENTE_ID' in df_r.columns:
+            # Criar contagem
             evol_counts = df_r['PACIENTE_ID'].astype(str).value_counts().reset_index()
             evol_counts.columns = ['ID_EVOL', 'QTD_EVOL']
+            
+            # Garantir tipo string no dataframe de pacientes também
+            df_p['ID'] = df_p['ID'].astype(str)
+            evol_counts['ID_EVOL'] = evol_counts['ID_EVOL'].astype(str)
+            
+            # Realizar o merge com segurança
             df_p = df_p.merge(evol_counts, left_on='ID', right_on='ID_EVOL', how='left').fillna({'QTD_EVOL': 0})
         else:
             df_p['QTD_EVOL'] = 0
             
         return df_p, df_f, gc
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.error(f"Erro ao carregar ou processar dados: {e}")
         return pd.DataFrame(), pd.DataFrame(), None
 
 MAIN_SCRIPT = "1_🏠_home.py" 
@@ -166,7 +181,6 @@ with st.sidebar:
     st.markdown("### 📅 Fila do Dia")
     hoje = datetime.date.today()
     if not df_fila.empty:
-        df_fila.columns = df_fila.columns.str.strip().str.upper()
         df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
         fila_hoje = df_fila[df_fila["DATA"] == hoje]
         for _, r in fila_hoje.iterrows():
@@ -178,10 +192,14 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
+# Cabeçalho com ícone e texto em branco
 st.markdown("""
     <div class="main-header">
-        <h1>🦷 Céu da Boca — Gestão de Pacientes</h1>
-        <p>Faculdade de Odontologia - UFAM</p>
+        <span style="font-size: 2.2rem;">📋</span>
+        <div>
+            <h1>Céu da Boca — Gestão de Pacientes</h1>
+            <p>Faculdade de Odontologia - UFAM</p>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -189,13 +207,11 @@ c_search, _ = st.columns([1.5, 2])
 busca = c_search.text_input("🔍 Buscar paciente:", placeholder="Nome, FAO ou status...")
 
 if busca:
-    busca_lower = busca.lower()
-    df_pacientes = df_pacientes[df_pacientes.apply(lambda r: r.astype(str).str.lower().str.contains(busca_lower).any(), axis=1)]
+    df_pacientes = df_pacientes[df_pacientes.apply(lambda r: r.astype(str).str.lower().str.contains(busca.lower()).any(), axis=1)]
 
 # ==========================
-# Lista de Pacientes (Tabela Otimizada)
+# Lista de Pacientes
 # ==========================
-# Proporções ajustadas para incluir a coluna de Evoluções (QTD)
 st.markdown("""
     <div class="table-header">
         <div style="flex: 2.1;">PACIENTE / FAO</div>
@@ -218,7 +234,6 @@ for idx, row in df_pacientes.iterrows():
     qtd_evol = int(row.get("QTD_EVOL", 0))
     
     with st.container():
-        # Layout da Linha com 7 colunas
         c1, c2, c3, c4, c5, c6, c_btns = st.columns([2.1, 0.5, 0.3, 1.5, 1.0, 0.6, 3.5])
         
         c1.markdown(f"**{nome}**<br><small style='color:#64748b'>FAO: {fao}</small>", unsafe_allow_html=True)
@@ -232,7 +247,6 @@ for idx, row in df_pacientes.iterrows():
         st_color = "#10b981" if "ATIVO" in str(status).upper() else "#94a3b8"
         c5.markdown(f"<div class='status-text' style='padding-top:8px; color:{st_color}'>{status}</div>", unsafe_allow_html=True)
 
-        # Coluna de Evoluções
         c6.markdown(f"<div style='padding-top:8px; text-align:center;'><span class='badge badge-evol'>{qtd_evol}</span></div>", unsafe_allow_html=True)
 
         with c_btns:
@@ -249,17 +263,17 @@ for idx, row in df_pacientes.iterrows():
                 add_page(MAIN_SCRIPT, "alterar_paciente")
                 st.switch_page("pages/alterar_paciente.py")
 
-            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Anexar Exames"):
+            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Exames"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "inserir_exames_e_diagnosticos")
                 st.switch_page("pages/inserir_exames_e_diagnosticos.py")
                 
-            if b_cols[3].button("🦷 Evol", key=f"v_{p_id}_{idx}", help="Cadastrar Evolução"):
+            if b_cols[3].button("🦷 Evol", key=f"v_{p_id}_{idx}", help="Evolução"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "evolucao_tratamento")
                 st.switch_page("pages/evolucao_tratamento.py")
                 
-            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar Hoje"):
+            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar"):
                 try:
                     sheet_f = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
                     sheet_f.append_row([p_id, hoje.strftime("%d/%m/%Y"), "AGENDADO"])
