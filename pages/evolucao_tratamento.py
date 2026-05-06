@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, date
 import pandas as pd
 from pathlib import Path
 import gspread
@@ -16,19 +16,19 @@ from streamlit.source_util import (
 # Configuração da Página
 # ==========================
 st.set_page_config(
-    page_title="Evolução - Céu da Boca", 
+    page_title="Evolução Clínica - FAO/UFAM", 
     page_icon="🦷", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Estilização CSS Profissional
+# Estilização CSS Profissional (UI/UX de Prontuário)
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         * { font-family: 'Inter', sans-serif; }
 
-        /* Cabeçalho Padrão Dashboard */
+        /* Cabeçalho Gradient Padrão Profissional */
         .main-header {
             background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
             padding: 1.2rem 2rem;
@@ -40,25 +40,37 @@ st.markdown("""
         .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; color: white !important; }
         .main-header p { margin: 0; opacity: 0.8; font-size: 0.85rem; color: white !important; }
 
-        /* Estilo de Prontuário */
-        .patient-summary {
+        /* Container de Dados do Paciente */
+        .patient-info-box {
             background-color: #f8fafc;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 12px;
             border: 1px solid #e2e8f0;
             margin-bottom: 20px;
         }
-        .record-label { color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-        .record-value { color: #1e293b; font-size: 1rem; font-weight: 600; margin-bottom: 10px; }
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #004a99;
+            text-transform: uppercase;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
 
-        /* Cards de Evolução */
+        /* Labels e Valores Profissionais */
+        .record-label { color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+        .record-value { color: #1e293b; font-size: 0.95rem; font-weight: 500; margin-bottom: 12px; }
+
+        /* Cards de Histórico */
         .evolution-card {
             background-color: white;
-            padding: 12px;
+            padding: 15px;
             border-radius: 10px;
             border-left: 5px solid #004a99;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
         }
         
         div.stButton > button { border-radius: 8px !important; font-weight: 600 !important; }
@@ -67,7 +79,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================
-# Funções de Sistema
+# Funções de Sistema e Dados
 # ==========================
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
@@ -91,25 +103,24 @@ def carregar_dados():
     SPREADSHEET_ID = "1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs"
     sh = gc.open_by_key(SPREADSHEET_ID)
     
-    # Carregar DF principal para nomes na sidebar
-    df_pacientes = pd.DataFrame(sh.sheet1.get_all_records())
-    df_pacientes.columns = df_pacientes.columns.str.strip().str.upper()
+    df_p = pd.DataFrame(sh.sheet1.get_all_records())
+    df_p.columns = df_p.columns.str.strip().str.upper()
     
     aba_registros = sh.worksheet("Registros")
     aba_fila = sh.worksheet("Fila")
     
-    return sh, df_pacientes, aba_registros, aba_fila
+    return sh, df_p, aba_registros, aba_fila
 
-# ==========================
-# Inicialização e Sidebar
-# ==========================
 sh, df_pacientes, aba_registros, aba_fila = carregar_dados()
 
+# ==========================
+# Sidebar Institucional
+# ==========================
 with st.sidebar:
     st.markdown("### 🏛️ FAO/UFAM\n**Céu da Boca**")
     st.markdown("---")
     st.markdown("### 📅 Fila de Hoje")
-    hoje_data = datetime.now().date()
+    hoje_data = date.today()
     df_f = pd.DataFrame(aba_fila.get_all_records())
     if not df_f.empty:
         df_f.columns = df_f.columns.str.strip().str.upper()
@@ -129,80 +140,101 @@ with st.sidebar:
 # ==========================
 st.markdown("""
     <div class="main-header">
-        <h1>🦷 Evolução do Tratamento</h1>
-        <p>Registro Clínico | Faculdade de Odontologia - UFAM</p>
+        <h1>🦷 Evolução e Prontuário Clínico</h1>
+        <p>Faculdade de Odontologia da Universidade Federal do Amazonas</p>
     </div>
 """, unsafe_allow_html=True)
 
-# Botão Voltar
+# Navegação
 c_nav, _ = st.columns([1, 3])
 if c_nav.button("⬅️ Voltar para Lista"):
     st.query_params.clear()
     delete_page("1_🏠_home", "evolucao_tratamento")
     st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
-# Captura ID do Paciente
+# Captura ID
 id_paciente_str = str(st.query_params.get("idpaciente", "")).strip()
 if not id_paciente_str:
-    st.error("ID do paciente não identificado.")
+    st.error("⚠️ Erro: Paciente não identificado nos parâmetros da página.")
     st.stop()
 
+# Localizar Paciente
 paciente_info = df_pacientes[df_pacientes["ID"].astype(str) == id_paciente_str].iloc[0]
 
 # ==========================
-# Resumo do Paciente
+# ILUSTRAÇÃO PROFISSIONAL DOS DADOS
 # ==========================
-with st.container():
-    st.markdown(f"### Paciente: {paciente_info.get('NOME')}")
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown('<p class="record-label">Prontuário FAO</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="record-value">{paciente_info.get("FAO", "-")}</p>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<p class="record-label">Idade</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="record-value">{paciente_info.get("IDADE", "-")} anos</p>', unsafe_allow_html=True)
-    with col3:
-        st.markdown('<p class="record-label">Gênero</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="record-value">{paciente_info.get("SEXO", "-")}</p>', unsafe_allow_html=True)
-    with col4:
-        status_val = paciente_info.get('STATUS','').upper()
-        st_color = "#10b981" if "ATIVO" in status_val else "#94a3b8"
-        st.markdown('<p class="record-label">Status</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="record-value" style="color:{st_color}">{status_val}</p>', unsafe_allow_html=True)
+st.markdown(f"### Paciente: {paciente_info.get('NOME')}")
 
-with st.expander("🩺 Ver Dados Clínicos Completos", expanded=False):
-    c_clin1, c_clin2 = st.columns(2)
-    with c_clin1:
-        st.markdown(f"**Tipo de Fissura:** {paciente_info.get('TIPO_FISSURA','-')}")
-        st.markdown(f"**Necessidades Cirúrgicas:** {paciente_info.get('NECES_CIRUR','-')}")
-        st.markdown(f"**Necessidades Ortodônticas:** {paciente_info.get('NECES_ORTO','-')}")
-    with c_clin2:
-        st.markdown(f"**Diagnóstico:** {paciente_info.get('DIAGNOSTICO','-')}")
-        st.markdown(f"**Plano de Tratamento:** {paciente_info.get('PLANO_TRATAMENTO','-')}")
-        st.markdown(f"**História do Tratamento:**")
-        st.caption(paciente_info.get('HISTORIA_TRATAMENTO','-'))
+def render_field(col, label, key):
+    val = str(paciente_info.get(key, "Não informado")).strip()
+    if val == "" or val == "nan": val = "Não informado"
+    col.markdown(f'<p class="record-label">{label}</p><p class="record-value">{val}</p>', unsafe_allow_html=True)
+
+# Card de Dados Cadastrais
+with st.container():
+    st.markdown('<p class="section-title">👤 Identificação e Contato</p>', unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns(4)
+    render_field(c1, "FAO", "FAO")
+    render_field(c2, "Idade", "IDADE")
+    render_field(c3, "Gênero/Sexo", "SEXO")
+    render_field(c4, "Status", "STATUS")
+    
+    c5, c6, c7, c8 = st.columns(4)
+    render_field(c5, "Data de Nascimento", "DATA")
+    render_field(c6, "Telefone", "TELEFONE")
+    render_field(c7, "Filiação", "FILIACAO")
+    render_field(c8, "Endereço", "ENDERECO")
+
+# Seção de Dados Clínicos (Expandida para Prontuário)
+with st.expander("🩺 Ver Ficha Clínica e Planejamento", expanded=True):
+    st.markdown('<p class="section-title">🦷 Condição Clínica</p>', unsafe_allow_html=True)
+    cl1, cl2 = st.columns(2)
+    render_field(cl1, "Tipo de Fissura", "TIPO_FISSURA")
+    render_field(cl2, "Características Oclusais", "CARAC_OCLUSAIS")
+    
+    render_field(st, "História do Tratamento", "HISTORIA_TRATAMENTO")
+    
+    st.markdown('<p class="section-title">📋 Diagnóstico e Planejamento</p>', unsafe_allow_html=True)
+    cl3, cl4 = st.columns(2)
+    render_field(cl3, "Diagnóstico", "DIAGNOSTICO")
+    render_field(cl4, "Plano de Tratamento", "PLANO_TRATAMENTO")
+    
+    st.markdown('<p class="section-title">⚡ Necessidades Específicas</p>', unsafe_allow_html=True)
+    n1, n2, n3, n4 = st.columns(4)
+    render_field(n1, "Necessidades Odontológicas", "NECES_ODONTO")
+    render_field(n2, "Necessidades Ortodônticas", "NECES_ORTO")
+    render_field(n3, "Necessidades Cirúrgicas", "NECES_CIRUR")
+    render_field(n4, "Observações (Outros)", "OUTROS")
 
 st.markdown("---")
 
 # ==========================
-# Cadastro de Nova Evolução
+# CADASTRO DE NOVA EVOLUÇÃO (Com bloqueio de data futura)
 # ==========================
-st.markdown("#### 📝 Nova Evolução")
+st.markdown("#### 📝 Registrar Novo Atendimento")
 c_form1, c_form2 = st.columns([3, 1])
+
 with c_form1:
-    descricao_evolucao = st.text_area("Descrição do atendimento", placeholder="Descreva os procedimentos realizados hoje...", height=120, label_visibility="collapsed")
+    descricao_evolucao = st.text_area("Descrição detalhada do atendimento:", height=150, placeholder="Digite aqui os procedimentos realizados...")
+
 with c_form2:
-    data_evolucao = st.date_input("Data do Registro", value=datetime.now(), format="DD/MM/YYYY")
+    # DATA RETROATIVA PERMITIDA / FUTURA BLOQUEADA
+    data_evolucao = st.date_input(
+        "Data da Evolução", 
+        value=date.today(),
+        max_value=date.today(), # Bloqueia datas futuras
+        format="DD/MM/YYYY"
+    )
     
-    # Capturar usuário
     user = st.user.email if hasattr(st, "user") else "Usuário"
     
     if st.button("💾 Salvar Evolução", use_container_width=True):
         if not descricao_evolucao.strip():
-            st.warning("Descreva a evolução antes de salvar.")
+            st.error("A descrição não pode estar vazia.")
         else:
             try:
+                # Salvar Registro
                 aba_registros.append_row([
                     id_paciente_str,
                     data_evolucao.strftime("%d/%m/%Y"),
@@ -210,52 +242,49 @@ with c_form2:
                     user
                 ])
                 
-                # Marcar como atendido na fila se existir agendamento hoje
-                registros_fila = aba_fila.get_all_records()
-                for i, row in enumerate(registros_fila, start=2):
+                # Sincronizar Fila
+                regs_f = aba_fila.get_all_records()
+                for i, row in enumerate(regs_f, start=2):
                     if str(row.get("PACIENTE_ID")).strip() == id_paciente_str:
-                        # Verifica se a data na fila coincide (tratando formatos)
                         try:
                             f_date = datetime.strptime(str(row.get("DATA")), "%d/%m/%Y").date()
                             if f_date == data_evolucao:
-                                aba_fila.update_cell(i, 3, "ATENDIDO") # Coluna 3 = STATUS
+                                aba_fila.update_cell(i, 3, "ATENDIDO")
                                 break
                         except: continue
                 
-                st.toast("Evolução salva com sucesso!", icon="✅")
+                st.toast("Evolução registrada com sucesso!", icon="✅")
                 time.sleep(1)
                 st.rerun()
             except Exception as e:
                 st.error(f"Erro ao salvar: {e}")
 
 # ==========================
-# Histórico de Evoluções
+# HISTÓRICO DE EVOLUÇÕES
 # ==========================
-st.markdown("#### 📜 Histórico de Evoluções")
+st.markdown("#### 📜 Histórico de Atendimentos")
 try:
-    registros = pd.DataFrame(aba_registros.get_all_records())
-    if not registros.empty and "PACIENTE_ID" in registros.columns:
-        registros.columns = registros.columns.str.strip().str.upper()
-        df_p = registros[registros["PACIENTE_ID"].astype(str) == id_paciente_str].copy()
+    regs = pd.DataFrame(aba_registros.get_all_records())
+    if not regs.empty:
+        regs.columns = regs.columns.str.strip().str.upper()
+        df_p = regs[regs["PACIENTE_ID"].astype(str) == id_paciente_str].copy()
         
         if not df_p.empty:
             df_p["DATA_REGISTRO"] = pd.to_datetime(df_p["DATA_REGISTRO"], dayfirst=True, errors="coerce")
-            df_p = df_p.sort_values(by="DATA_REGISTRO", ascending=False)
+            df_p = df_p.sort_values("DATA_REGISTRO", ascending=False)
 
             for _, row in df_p.iterrows():
-                dt = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else "S/D"
+                dt_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else "S/D"
                 st.markdown(f"""
                     <div class="evolution-card">
                         <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                            <span style="font-weight:700; color:#004a99;">📅 {dt}</span>
+                            <span style="font-weight:700; color:#004a99;">📅 {dt_str}</span>
                             <span style="font-size:0.8rem; color:#64748b;">👤 {row.get('USUARIO','-')}</span>
                         </div>
-                        <div style="color:#1e293b; font-size:0.95rem; line-height:1.4;">
-                            {row.get('EVOLUCAO','-')}
-                        </div>
+                        <div style="color:#1e293b; font-size:0.95rem;">{row.get('EVOLUCAO','-')}</div>
                     </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("Nenhuma evolução registrada anteriormente.")
-except Exception as e:
-    st.error(f"Erro ao carregar histórico: {e}")
+            st.info("Nenhum registro de evolução encontrado para este paciente.")
+except:
+    st.error("Erro ao carregar histórico.")
