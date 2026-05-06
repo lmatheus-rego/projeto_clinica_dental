@@ -224,10 +224,7 @@ with c1:
         st.query_params.clear()
         if "id_persistente" in st.session_state: del st.session_state.id_persistente
         delete_page("1_🏠_home", "ficha_clinica")
-        try:
-            st.switch_page("pages/2_🧑🏻_lista_paciente.py")
-        except:
-            st.switch_page("pages/2_lista_paciente.py")
+        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
 with c2:
     pdf_buffer = gerar_pdf_completo(paciente, evolucoes)
