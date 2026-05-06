@@ -202,8 +202,6 @@ with c2:
     pdf_buffer = gerar_pdf_completo(paciente, evolucoes)
     st.download_button("🖨️ Exportar Ficha Clínica", data=pdf_buffer, file_name=f"Ficha_{paciente.get('NOME','paciente')}.pdf", mime="application/pdf", use_container_width=True)
 
-st.markdown("---")
-
 # Cabeçalho Destaque
 st.markdown(f"""
     <div class="patient-header-area">
