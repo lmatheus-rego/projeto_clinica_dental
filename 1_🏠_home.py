@@ -219,7 +219,7 @@ with st.sidebar:
             st.write("Sem atendimentos hoje.")
     
     st.markdown("---")
-    if st.button("🔄 Sincronizar Google Sheets"):
+    if st.button("🔄 Atualizar Informações"):
         st.cache_data.clear()
         st.rerun()
 
