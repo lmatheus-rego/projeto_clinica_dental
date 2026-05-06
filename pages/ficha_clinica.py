@@ -12,6 +12,12 @@ import io
 import datetime
 import pytz
 from pathlib import Path
+from streamlit.source_util import (
+    page_icon_and_name,
+    calc_md5,
+    get_pages,
+    _on_pages_changed
+)
 
 # --------------------------------------------
 # 🔹 Configuração e Estilo UI/UX
@@ -55,6 +61,17 @@ st.markdown("""
 # --------------------------------------------
 # 🔹 Funções de Dados
 # --------------------------------------------
+
+# ----------------- Funções Originais -----------------
+
+def delete_page(main_script_path_str, page_name):
+    current_pages = get_pages(main_script_path_str)
+    for key, value in list(current_pages.items()):
+        if value['page_name'] == page_name:
+            del current_pages[key]
+            break
+    _on_pages_changed.send()
+
 def get_credentials(scopes):
     service_account_info = dict(st.secrets["gcp_service_account"])
     service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
@@ -195,8 +212,10 @@ evolucoes = df_r[df_r["PACIENTE_ID"].astype(str) == id_p] if not df_r.empty else
 # Ações
 c1, c2, _ = st.columns([1, 1, 2.5])
 with c1:
-    if st.button("⬅️ Lista de Pacientes", use_container_width=True):
+    if st.button("🔙 Voltar para lista de pacientes"):
         st.query_params.clear()
+        if "id_persistente" in st.session_state: del st.session_state.id_persistente
+        delete_page("1_🏠_home", "ficha_clinica")
         st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 with c2:
     pdf_buffer = gerar_pdf_completo(paciente, evolucoes)
