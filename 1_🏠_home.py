@@ -18,45 +18,60 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Paleta de Cores Padrão
+COR_PRIMARIA = "#004a99"  # Azul Institucional
+COR_ALERTA = "#E57373"    # Vermelho Suave para "Não Especificado"
+COR_MASCULINO = "#AED6F1"
+COR_FEMININO = "#F5B7B1"
+
 # CSS Profissional e Customizado
-st.markdown("""
+st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
-        * { font-family: 'Inter', sans-serif; }
+        * {{ font-family: 'Inter', sans-serif; }}
 
         /* Estilização do Título Profissional */
-        .main-header {
-            background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
+        .main-header {{
+            background: linear-gradient(90deg, {COR_PRIMARIA} 0%, #007bff 100%);
             padding: 2rem;
             border-radius: 15px;
-            color: white;
             margin-bottom: 2rem;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .main-header h1 { margin: 0; font-weight: 800; font-size: 2.2rem; }
-        .main-header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 1rem; }
+        }}
+        .main-header h1 {{ 
+            margin: 0; 
+            font-weight: 800; 
+            font-size: 2.2rem; 
+            color: white !important; 
+        }}
+        .main-header p {{ 
+            margin: 5px 0 0 0; 
+            opacity: 0.9; 
+            font-size: 1rem; 
+            color: white !important; 
+        }}
 
         /* Cards de Métricas */
-        .metric-card {
+        .metric-card {{
             background-color: white;
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-top: 4px solid #004a99;
+            border-top: 4px solid {COR_PRIMARIA};
             text-align: center;
-        }
-        .metric-label { color: #64748b; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }
-        .metric-value { color: #1e293b; font-size: 2rem; font-weight: 700; margin-top: 5px; }
+        }}
+        .metric-label {{ color: #64748b; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }}
+        .metric-value {{ color: #1e293b; font-size: 2rem; font-weight: 700; margin-top: 5px; }}
 
         /* Ajustes de Tabs */
-        .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-        .stTabs [data-baseweb="tab"] {
+        .stTabs [data-baseweb="tab-list"] {{ gap: 24px; }}
+        .stTabs [data-baseweb="tab"] {{
             height: 50px;
             padding-top: 10px;
             font-weight: 600;
             font-size: 1rem;
-        }
+        }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -119,19 +134,15 @@ tab_clinico, tab_demo, tab_hist = st.tabs(["📋 Perfil Clínico", "👥 Demogra
 
 with tab_clinico:
     st.subheader("Distribuição por Tipo de Fissura")
-    
-    # Preparação dos dados para o gráfico de barras
     df_fiss = df_pacientes["TIPO_FISSURA"].value_counts().reset_index()
     df_fiss.columns = ["Tipo", "Qtd"]
     
-    # Lógica de Ordenação: "Não Especificado" sempre por último
     df_normal = df_fiss[df_fiss["Tipo"] != "Não Especificado"].sort_values("Qtd", ascending=False)
     df_extra = df_fiss[df_fiss["Tipo"] == "Não Especificado"]
     df_final_fiss = pd.concat([df_normal, df_extra])
     
-    # Mapeamento de cores (Não especificado em Vermelho)
-    cores_map = {tipo: "#004a99" for tipo in df_final_fiss["Tipo"]}
-    cores_map["Não Especificado"] = "#E57373"
+    cores_map = {tipo: COR_PRIMARIA for tipo in df_final_fiss["Tipo"]}
+    cores_map["Não Especificado"] = COR_ALERTA
     
     fig_fiss = px.bar(
         df_final_fiss, x="Tipo", y="Qtd", 
@@ -152,7 +163,8 @@ with tab_demo:
         
         fig_sexo = px.pie(
             df_sexo, names="Sexo", values="Qtd",
-            color_discrete_sequence=["#AED6F1", "#F5B7B1"],
+            color="Sexo",
+            color_discrete_map={"Masculino": COR_MASCULINO, "Feminino": COR_FEMININO},
             hole=0.4, template="plotly_white"
         )
         st.plotly_chart(fig_sexo, use_container_width=True)
@@ -160,8 +172,7 @@ with tab_demo:
     with col_d2:
         st.subheader("Faixa Etária")
         if "DATA" in df_pacientes.columns:
-            # Cálculo de idade
-            df_pacientes["DATA_DT"] = pd.to_datetime(df_pacientes["DATA"], errors="coerce", dayfirst=True)
+            df_pacientes["DATA_DT"] = pd.to_datetime(df_pacientes["DATA"], errors='coerce', dayfirst=True)
             hoje_dt = pd.Timestamp.now()
             df_pacientes["IDADE"] = (hoje_dt - df_pacientes["DATA_DT"]).dt.days // 365
             
@@ -174,23 +185,25 @@ with tab_demo:
             
             fig_idade = px.bar(
                 df_idade, x="Faixa", y="Qtd", 
-                text="Qtd", color_discrete_sequence=["#004a99"],
+                text="Qtd", color_discrete_sequence=[COR_PRIMARIA],
                 template="plotly_white"
             )
+            fig_idade.update_layout(yaxis_title="Nº de Pacientes", xaxis_title="")
             st.plotly_chart(fig_idade, use_container_width=True)
 
 with tab_hist:
     st.subheader("Evolução de Atendimentos")
     if not df_registros.empty and "DATA_REGISTRO" in df_registros.columns:
-        df_registros["DATA_DT"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors="coerce", dayfirst=True)
+        df_registros["DATA_DT"] = pd.to_datetime(df_registros["DATA_REGISTRO"], errors='coerce', dayfirst=True)
         df_registros["Mês"] = df_registros["DATA_DT"].dt.to_period("M").astype(str)
         df_hist = df_registros.groupby("Mês").size().reset_index(name="Atendimentos")
         
         fig_hist = px.line(
             df_hist, x="Mês", y="Atendimentos", 
             markers=True, line_shape="spline",
-            template="plotly_white", color_discrete_sequence=["#004a99"]
+            template="plotly_white", color_discrete_sequence=[COR_PRIMARIA]
         )
+        fig_hist.update_layout(yaxis_title="Registros", xaxis_title="Mês de Referência")
         st.plotly_chart(fig_hist, use_container_width=True)
     else:
         st.info("Aguardando mais registros de evolução para gerar o histórico.")
