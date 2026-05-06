@@ -212,11 +212,11 @@ st.markdown("---")
 # ==========================
 # CADASTRO DE NOVA EVOLUÇÃO (Com bloqueio de data futura)
 # ==========================
-st.markdown("#### 📝 Registrar Novo Atendimento")
+st.markdown("#### 📝 Registrar Nova Evolução")
 c_form1, c_form2 = st.columns([3, 1])
 
 with c_form1:
-    descricao_evolucao = st.text_area("Descrição detalhada do atendimento:", height=150, placeholder="Digite aqui os procedimentos realizados...")
+    descricao_evolucao = st.text_area("Descrição detalhada da evolução:", height=150, placeholder="Digite aqui os procedimentos realizados...")
 
 with c_form2:
     # DATA RETROATIVA PERMITIDA / FUTURA BLOQUEADA
@@ -262,7 +262,7 @@ with c_form2:
 # ==========================
 # HISTÓRICO DE EVOLUÇÕES
 # ==========================
-st.markdown("#### 📜 Histórico de Atendimentos")
+st.markdown("#### 📜 Histórico de Evoluções")
 try:
     regs = pd.DataFrame(aba_registros.get_all_records())
     if not regs.empty:
