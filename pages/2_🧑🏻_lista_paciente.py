@@ -223,17 +223,17 @@ for idx, row in df_pacientes.iterrows():
                 add_page(MAIN_SCRIPT, "alterar_paciente")
                 st.switch_page("pages/alterar_paciente.py")
 
-            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Exames"):
+            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Anexar Exames e Editar Dados Clínicos"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "inserir_exames_e_diagnosticos")
                 st.switch_page("pages/inserir_exames_e_diagnosticos.py")
                 
-            if b_cols[3].button("🦷 Evol", key=f"v_{p_id}_{idx}", help="Evolução"):
+            if b_cols[3].button("🦷 Evol", key=f"v_{p_id}_{idx}", help="Cadastrar Evolução"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "evolucao_tratamento")
                 st.switch_page("pages/evolucao_tratamento.py")
                 
-            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar Hoje"):
+            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar Consulta para Hoje"):
                 try:
                     sheet_f = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
                     sheet_f.append_row([p_id, hoje.strftime("%d/%m/%Y"), "AGENDADO"])
