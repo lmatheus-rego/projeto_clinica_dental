@@ -118,8 +118,8 @@ def gerar_pdf_completo(paciente, evolucoes):
     styles = getSampleStyleSheet()
     story = []
 
-    story.append(Paragraph("<b>PROJETO CÉU DA BOCA - FAO/UFAM</b>", styles['Title']))
-    story.append(Paragraph(f"FICHA CLÍNICA COMPLETA - {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    story.append(Paragraph("<b>PRONTUÁRIO CLÍNICO</b>", styles['Title']))
+    story.append(Paragraph(f"Documento gerado em - {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
     story.append(Spacer(1, 15))
 
     def add_section(titulo, campos_chaves):
@@ -190,13 +190,7 @@ if paciente_df.empty:
 paciente = paciente_df.iloc[0]
 evolucoes = df_r[df_r["PACIENTE_ID"].astype(str) == id_p] if not df_r.empty else pd.DataFrame()
 
-# Cabeçalho Destaque
-st.markdown(f"""
-    <div class="patient-header-area">
-        <div class="patient-name-label">Prontuário do Paciente</div>
-        <div class="patient-name-value">{str(paciente.get('NOME','')).upper()}</div>
-    </div>
-""", unsafe_allow_html=True)
+
 
 # Ações
 c1, c2, _ = st.columns([1, 1, 2.5])
@@ -210,6 +204,13 @@ with c2:
 
 st.markdown("---")
 
+# Cabeçalho Destaque
+st.markdown(f"""
+    <div class="patient-header-area">
+        <div class="patient-name-label">Prontuário do Paciente</div>
+        <div class="patient-name-value">{str(paciente.get('NOME','')).upper()}</div>
+    </div>
+""", unsafe_allow_html=True)
 # --------------------------------------------
 # 🔹 Renderização dos Campos na Tela
 # --------------------------------------------
