@@ -96,7 +96,7 @@ MAPA_CAMPOS = {
     "FILIACAO": "Filiação",
     "ENDERECO": "Endereço Residencial",
     "TELEFONE": "Telefone de Contato",
-    "FAO": "Prontuário FAO",
+    "FAO": "FAO",
     "STATUS": "Status do Paciente",
     "TIPO_FISSURA": "Tipo de Fissura",
     "HISTORIA_TRATAMENTO": "História do Tratamento",
