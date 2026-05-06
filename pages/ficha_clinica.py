@@ -17,7 +17,6 @@ from pathlib import Path
 # --------------------------------------------
 st.set_page_config(page_title="Ficha do Paciente - Céu da Boca", page_icon="🦷", layout="wide")
 
-# Fuso horário de Manaus
 fuso_manaus = pytz.timezone("America/Manaus")
 
 st.markdown("""
@@ -26,63 +25,41 @@ st.markdown("""
         
         * { font-family: 'Inter', sans-serif; }
         
-        /* CABEÇALHO PROPORCIONAL (Padrão Dashboard) */
+        /* CABEÇALHO PROPORCIONAL */
         .main-header {
             background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
-            padding: 1.5rem 2rem;
+            padding: 1.2rem 2rem;
             border-radius: 12px;
             color: white;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        
-        .main-header h1 { 
-            margin: 0 !important; 
-            font-weight: 700 !important; 
-            font-size: 1.8rem !important; 
-            color: #FFFFFF !important;
-            letter-spacing: -0.5px;
-        }
+        .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; color: white; }
 
-        /* Botões Padrão Profissional */
-        div.stButton > button {
-            border-radius: 8px !important;
-            font-weight: 600 !important;
-            height: 38px;
-            transition: all 0.3s ease;
-        }
-
-        /* Labels de Prontuário */
-        .record-label {
-            color: #64748b;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 2px;
-        }
-        .record-value {
+        /* NOME DO PACIENTE PROFISSIONAL */
+        .patient-name-title {
             color: #1e293b;
-            font-size: 1.05rem;
-            font-weight: 500;
-            margin-bottom: 15px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 5px;
         }
 
-        /* Estilo dos Expanders */
-        .stExpander {
-            border: 1px solid #f1f5f9 !important;
-            border-radius: 12px !important;
-            background-color: white !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
+        /* LABELS E VALORES */
+        .record-label { color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+        .record-value { color: #1e293b; font-size: 1.05rem; font-weight: 500; margin-bottom: 15px; }
 
-        .block-container {
-            padding-top: 2rem !important;
-        }
+        /* BOTÕES */
+        div.stButton > button { border-radius: 8px !important; font-weight: 600 !important; height: 38px; }
+        
+        .stExpander { border: 1px solid #f1f5f9 !important; border-radius: 12px !important; }
+        .block-container { padding-top: 2rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------
-# 🔹 Funções de Dados e Credenciais
+# 🔹 Funções de Dados e PDF
 # --------------------------------------------
 def get_credentials(scopes):
     service_account_info = dict(st.secrets["gcp_service_account"])
@@ -90,158 +67,151 @@ def get_credentials(scopes):
     return Credentials.from_service_account_info(service_account_info, scopes=scopes)
 
 @st.cache_data(ttl=300)
-def carregar_dados_completos():
+def carregar_dados_ficha():
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         credentials = get_credentials(scopes)
         gc = gspread.authorize(credentials)
         sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
-        
         df_p = pd.DataFrame(sh.sheet1.get_all_records())
         df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
         df_r = pd.DataFrame(sh.worksheet("Registros").get_all_records())
-        
         return df_p, df_f, df_r, gc
-    except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+    except:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), None
 
-# Inicializar dados
-df_pacientes, df_fila, df_registros, gc_global = carregar_dados_completos()
+def gerar_pdf_ficha(paciente, evolucoes, usuario_logado):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Título do PDF
+    story.append(Paragraph(f"<b>FICHA CLÍNICA: {paciente.get('Nome', '').upper()}</b>", styles['Title']))
+    story.append(Paragraph(f"Emitido em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    story.append(Spacer(1, 12))
+
+    # Seção Dados
+    story.append(Paragraph("<b>DADOS PESSOAIS</b>", styles['Heading2']))
+    for label, key in [("Nome", "Nome"), ("Idade", "Idade"), ("Sexo", "Sexo"), ("FAO", "Fao"), ("Telefone", "Telefone")]:
+        story.append(Paragraph(f"<b>{label}:</b> {paciente.get(key, '-')}", styles['Normal']))
+    
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("<b>AVALIAÇÃO CLÍNICA</b>", styles['Heading2']))
+    story.append(Paragraph(f"<b>Tipo de Fissura:</b> {paciente.get('Tipo De Fissura', '-')}", styles['Normal']))
+    story.append(Paragraph(f"<b>Diagnóstico:</b> {paciente.get('Diagnostico', '-')}", styles['Normal']))
+    
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("<b>EVOLUÇÕES</b>", styles['Heading2']))
+    if not evolucoes.empty:
+        for _, row in evolucoes.sort_values("DATA_REGISTRO", ascending=False).iterrows():
+            data_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if hasattr(row["DATA_REGISTRO"], "strftime") else str(row["DATA_REGISTRO"])
+            story.append(Paragraph(f"<b>{data_str}:</b> {row.get('EVOLUCAO', '-')}", styles['Normal']))
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+# --------------------------------------------
+# 🔹 Inicialização
+# --------------------------------------------
+df_pacientes, df_fila, df_registros, gc = carregar_dados_ficha()
 if not df_pacientes.empty:
     df_pacientes.columns = df_pacientes.columns.str.strip().str.title()
 
-# --------------------------------------------
-# 🔹 Menu Lateral Profissional
-# --------------------------------------------
+# Sidebar
 with st.sidebar:
-    st.markdown("### 🏛️ Institucional\n**FAO/UFAM**")
-    st.caption("Projeto Céu da Boca")
+    st.markdown("### 🏛️ FAO/UFAM\n**Céu da Boca**")
     st.markdown("---")
-    
     st.markdown("### 📅 Fila de Hoje")
     hoje = datetime.date.today()
     if not df_fila.empty:
         df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
-        fila_hoje = df_fila[df_fila["DATA"] == hoje]
-        if not fila_hoje.empty:
-            for _, r in fila_hoje.iterrows():
-                p_id = str(r["PACIENTE_ID"]).strip()
-                p_nome = df_pacientes[df_pacientes["Id"].astype(str).str.strip() == p_id]["Nome"].values
-                st.info(f"👤 **{p_nome[0] if len(p_nome)>0 else p_id}**")
-        else:
-            st.write("Sem agendamentos.")
-    
-    st.markdown("---")
-    if st.button("🔄 Sincronizar", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
+        fila_h = df_fila[df_fila["DATA"] == hoje]
+        for _, r in fila_h.iterrows():
+            p_nome = df_pacientes[df_pacientes["Id"].astype(str).str.strip() == str(r["PACIENTE_ID"]).strip()]["Nome"].values
+            st.info(f"👤 {p_nome[0] if len(p_nome)>0 else 'ID:'+str(r['PACIENTE_ID'])}")
 
-# --------------------------------------------
-# 🔹 Cabeçalho da Página
-# --------------------------------------------
-st.markdown("""
-    <div class="main-header">
-        <h1>🗂️ Ficha Clínica do Paciente</h1>
-    </div>
-""", unsafe_allow_html=True)
+# Cabeçalho
+st.markdown('<div class="main-header"><h1>🗂️ Prontuário do Paciente</h1></div>', unsafe_allow_html=True)
 
-# Captura de ID dos Query Params
-id_paciente_str = st.query_params.get("idpaciente", "")
-if isinstance(id_paciente_str, list): id_paciente_str = id_paciente_str[0]
-id_paciente_str = id_paciente_str.strip()
+id_paciente = st.query_params.get("idpaciente", "")
+if isinstance(id_paciente, list): id_paciente = id_paciente[0]
 
-# Validar Paciente
-paciente_df = df_pacientes[df_pacientes["Id"].astype(str) == id_paciente_str] if not df_pacientes.empty else pd.DataFrame()
+paciente_df = df_pacientes[df_pacientes["Id"].astype(str) == str(id_paciente).strip()]
 
 if paciente_df.empty:
-    st.warning("Selecione um paciente na lista para visualizar a ficha.")
-    if st.button("Ir para Lista de Pacientes"):
-        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+    st.warning("Paciente não selecionado.")
+    if st.button("⬅️ Voltar para Lista"): st.switch_page("pages/2_🧑🏻_lista_paciente.py")
     st.stop()
 
 paciente = paciente_df.iloc[0]
+evolucoes = df_registros[df_registros["PACIENTE_ID"].astype(str) == str(id_paciente).strip()] if not df_registros.empty else pd.DataFrame()
 
-# --------------------------------------------
-# 🔹 Ações de Topo
-# --------------------------------------------
-c_nav1, c_nav2, _ = st.columns([1, 1, 2.5])
+# Nome do Paciente (Design Profissional)
+st.markdown(f'<div class="patient-name-title">{paciente.get("Nome", "").upper()}</div>', unsafe_allow_html=True)
 
-with c_nav1:
-    if st.button("⬅️ Voltar para Lista", use_container_width=True):
+# Ações
+c1, c2, _ = st.columns([1, 1, 2.5])
+with c1:
+    if st.button("⬅️ Voltar", use_container_width=True):
         st.query_params.clear()
         st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 
-with c_nav2:
-    # Botão de PDF (Simplificado para o exemplo)
-    if st.button("🖨️ Exportar PDF", use_container_width=True):
-        st.toast("Gerando documento...", icon="⏳")
+with c2:
+    # PDF Funcional
+    pdf_data = gerar_pdf_ficha(paciente, evolucoes, "Usuário Logado")
+    st.download_button(
+        label="🖨️ Exportar Ficha",
+        data=pdf_data,
+        file_name=f"Ficha_{paciente.get('Nome','paciente')}.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
 
-st.markdown(f"## **{paciente.get('Nome', '-').upper()}**")
 st.markdown("---")
 
 # --------------------------------------------
-# 🔹 Corpo da Ficha (Aspecto Profissional)
+# 🔹 Corpo da Ficha
 # --------------------------------------------
+t1, t2 = st.tabs(["📋 Dados e Diagnóstico", "📜 Histórico de Evolução"])
 
-with st.expander("🧾 Dados Cadastrais", expanded=True):
-    col1, col2, col3 = st.columns(3)
-    
-    fields = [
-        (col1, "Nome Completo", paciente.get('Nome')),
-        (col1, "Idade", f"{paciente.get('Idade')} anos"),
-        (col1, "Sexo", paciente.get('Sexo')),
-        (col2, "FAO (Prontuário)", paciente.get('Fao')),
-        (col2, "Telefone", paciente.get('Telefone')),
-        (col2, "Data de Nascimento", paciente.get('Data')),
-        (col3, "Endereço", paciente.get('Endereco')),
-        (col3, "Filiação", paciente.get('Filiacao'))
-    ]
-    
-    for col, label, value in fields:
-        col.markdown(f'<p class="record-label">{label}</p><p class="record-value">{value or "-"}</p>', unsafe_allow_html=True)
+with t1:
+    with st.expander("🧾 Dados Cadastrais", expanded=True):
+        col1, col2 = st.columns(2)
+        campos = [
+            (col1, "Prontuário FAO", paciente.get('Fao')),
+            (col1, "Idade", f"{paciente.get('Idade')} anos"),
+            (col1, "Sexo", paciente.get('Sexo')),
+            (col2, "Telefone", paciente.get('Telefone')),
+            (col2, "Nascimento", paciente.get('Data')),
+            (col2, "Endereço", paciente.get('Endereco'))
+        ]
+        for col, lab, val in campos:
+            col.markdown(f'<p class="record-label">{lab}</p><p class="record-value">{val or "-"}</p>', unsafe_allow_html=True)
 
-with st.expander("🩺 Avaliação e Diagnóstico", expanded=True):
-    c_clin1, c_clin2 = st.columns(2)
-    
-    # Campo de destaque para o Tipo de Fissura
-    st.info(f"**TIPO DE FISSURA:** {paciente.get('Tipo De Fissura', 'Não especificado')}")
-    
-    clin_fields = [
-        (c_clin1, "História do Tratamento", "Historia_Tratamento"),
-        (c_clin1, "Características Oclusais", "Carac_Oclusais"),
-        (c_clin1, "Necessidades Ortodônticas", "Neces_Orto"),
-        (c_clin2, "Necessidades Cirúrgicas", "Neces_Cirur"),
-        (c_clin2, "Diagnóstico", "Diagnostico"),
-        (c_clin2, "Plano de Tratamento", "Plano_Tratamento")
-    ]
-    
-    for col, label, key in clin_fields:
-        col.markdown(f'<p class="record-label">{label}</p><p class="record-value">{paciente.get(key) or "Sem registros"}</p>', unsafe_allow_html=True)
+    with st.expander("🩺 Avaliação Clínica", expanded=True):
+        st.info(f"**TIPO DE FISSURA:** {paciente.get('Tipo De Fissura', 'Não informado')}")
+        c_c1, c_c2 = st.columns(2)
+        clin = [
+            (c_c1, "Diagnóstico", "Diagnostico"),
+            (c_c1, "Plano de Tratamento", "Plano_Tratamento"),
+            (c_c2, "História do Tratamento", "Historia_Tratamento"),
+            (c_c2, "Necessidades Ortodônticas", "Neces_Orto")
+        ]
+        for col, lab, key in clin:
+            col.markdown(f'<p class="record-label">{lab}</p><p class="record-value">{paciente.get(key) or "Sem registros"}</p>', unsafe_allow_html=True)
 
-with st.expander("📜 Histórico de Evoluções", expanded=True):
-    evolucoes = df_registros[df_registros["PACIENTE_ID"].astype(str) == id_paciente_str] if not df_registros.empty else pd.DataFrame()
-    
+with t2:
     if not evolucoes.empty:
         evolucoes["DATA_REGISTRO"] = pd.to_datetime(evolucoes["DATA_REGISTRO"], dayfirst=True, errors='coerce')
         for _, row in evolucoes.sort_values("DATA_REGISTRO", ascending=False).iterrows():
-            data_f = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else "S/D"
+            d_str = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if pd.notna(row["DATA_REGISTRO"]) else "S/D"
             st.markdown(f"""
                 <div style="background-color:#f8fafc; padding:12px; border-radius:10px; border-left:5px solid #004a99; margin-bottom:12px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span style="font-weight:700; color:#004a99;">📅 {data_f}</span>
-                        <span style="font-size:0.8rem; color:#64748b;">👤 {row.get('USUARIO','-')}</span>
-                    </div>
-                    <div style="color:#1e293b; line-height:1.5;">{row.get('EVOLUCAO', '-')}</div>
+                    <small style="font-weight:700; color:#004a99;">📅 {d_str} | 👤 {row.get('USUARIO','-')}</small>
+                    <div style="margin-top:5px; color:#1e293b;">{row.get('EVOLUCAO', '-')}</div>
                 </div>
             """, unsafe_allow_html=True)
     else:
-        st.info("Nenhuma evolução clínica registrada para este paciente.")
-
-with st.expander("📎 Documentos Digitais", expanded=False):
-    # Aqui entraria a função de listar PDFs do Drive que você já tem
-    st.write("Consulte os arquivos anexados no Google Drive vinculados ao ID deste paciente.")
-
-# Rodapé
-st.markdown("---")
-st.caption(f"Ficha atualizada em: {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')}")
+        st.info("Nenhuma evolução registrada.")
