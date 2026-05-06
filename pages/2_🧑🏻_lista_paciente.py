@@ -133,32 +133,27 @@ def carregar_dados():
         gc = gspread.authorize(credentials)
         sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
         
-        # Carregar Pacientes
         df_p = pd.DataFrame(sh.worksheet("Pacientes").get_all_records())
         df_p.columns = df_p.columns.str.strip().str.upper()
         
-        # Carregar Fila
         df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
         df_f.columns = df_f.columns.str.strip().str.upper()
         
-        # Carregar Evoluções
         df_r = pd.DataFrame(sh.worksheet("Registros").get_all_records())
         df_r.columns = df_r.columns.str.strip().str.upper()
         
-        # FIX: Garantir que as colunas de ID sejam strings para o merge
         if not df_r.empty and 'PACIENTE_ID' in df_r.columns:
-            # Criar contagem
             evol_counts = df_r['PACIENTE_ID'].astype(str).value_counts().reset_index()
             evol_counts.columns = ['ID_EVOL', 'QTD_EVOL']
-            
-            # Garantir tipo string no dataframe de pacientes também
             df_p['ID'] = df_p['ID'].astype(str)
             evol_counts['ID_EVOL'] = evol_counts['ID_EVOL'].astype(str)
-            
-            # Realizar o merge com segurança
             df_p = df_p.merge(evol_counts, left_on='ID', right_on='ID_EVOL', how='left').fillna({'QTD_EVOL': 0})
         else:
             df_p['QTD_EVOL'] = 0
+            
+        # Garantir tipos para ordenação correta
+        df_p['IDADE'] = pd.to_numeric(df_p['IDADE'], errors='coerce').fillna(0)
+        df_p['QTD_EVOL'] = df_p['QTD_EVOL'].astype(int)
             
         return df_p, df_f, gc
     except Exception as e:
@@ -181,8 +176,8 @@ with st.sidebar:
     st.markdown("### 📅 Fila do Dia")
     hoje = datetime.date.today()
     if not df_fila.empty:
-        df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
-        fila_hoje = df_fila[df_fila["DATA"] == hoje]
+        df_fila["DATA_DT"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
+        fila_hoje = df_fila[df_fila["DATA_DT"] == hoje]
         for _, r in fila_hoje.iterrows():
             p_id = str(r["PACIENTE_ID"]).strip()
             p_nome = df_pacientes[df_pacientes["ID"].astype(str).str.strip() == p_id]["NOME"].values
@@ -192,7 +187,6 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
-# Cabeçalho com ícone e texto em branco
 st.markdown("""
     <div class="main-header">
         <span style="font-size: 2.2rem;">📋</span>
@@ -203,11 +197,29 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-c_search, _ = st.columns([1.5, 2])
+# Barra de Ferramentas: Busca e Ordenação
+c_search, c_sort = st.columns([2, 1])
 busca = c_search.text_input("🔍 Buscar paciente:", placeholder="Nome, FAO ou status...")
 
+with c_sort:
+    opcoes_ordem = {
+        "Nome (A-Z)": ("NOME", True),
+        "Nome (Z-A)": ("NOME", False),
+        "Mais Evoluções": ("QTD_EVOL", False),
+        "Menos Evoluções": ("QTD_EVOL", True),
+        "Idade (Crescente)": ("IDADE", True),
+        "Idade (Decrescente)": ("IDADE", False),
+        "Status": ("STATUS", True)
+    }
+    ordem_sel = st.selectbox("⇅ Ordenar por:", list(opcoes_ordem.keys()))
+
+# Filtragem
 if busca:
     df_pacientes = df_pacientes[df_pacientes.apply(lambda r: r.astype(str).str.lower().str.contains(busca.lower()).any(), axis=1)]
+
+# Aplicação da Ordenação
+col_sort, asc_flag = opcoes_ordem[ordem_sel]
+df_pacientes = df_pacientes.sort_values(by=col_sort, ascending=asc_flag)
 
 # ==========================
 # Lista de Pacientes
@@ -237,7 +249,7 @@ for idx, row in df_pacientes.iterrows():
         c1, c2, c3, c4, c5, c6, c_btns = st.columns([2.1, 0.5, 0.3, 1.5, 1.0, 0.6, 3.5])
         
         c1.markdown(f"**{nome}**<br><small style='color:#64748b'>FAO: {fao}</small>", unsafe_allow_html=True)
-        c2.markdown(f"<div style='padding-top:10px'>{row.get('IDADE', '-')}a</div>", unsafe_allow_html=True)
+        c2.markdown(f"<div style='padding-top:10px'>{int(row.get('IDADE', 0))}a</div>", unsafe_allow_html=True)
         
         g_style = "badge-m" if sexo == "M" else "badge-f"
         c3.markdown(f"<div style='padding-top:8px'><span class='badge {g_style}'>{sexo}</span></div>", unsafe_allow_html=True)
@@ -253,27 +265,27 @@ for idx, row in df_pacientes.iterrows():
             st.write("") 
             b_cols = st.columns(5)
             
-            if b_cols[0].button("📄 Ficha", key=f"f_{p_id}_{idx}", help="Ver Ficha"):
+            if b_cols[0].button("📄 Ficha", key=f"f_{p_id}_{idx}"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "ficha_clinica")
                 st.switch_page("pages/ficha_clinica.py")
             
-            if b_cols[1].button("✏️ Edit", key=f"e_{p_id}_{idx}", help="Editar Dados"):
+            if b_cols[1].button("✏️ Edit", key=f"e_{p_id}_{idx}"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "alterar_paciente")
                 st.switch_page("pages/alterar_paciente.py")
 
-            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Exames"):
+            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "inserir_exames_e_diagnosticos")
                 st.switch_page("pages/inserir_exames_e_diagnosticos.py")
                 
-            if b_cols[3].button("🦷 Evol", key=f"v_{p_id}_{idx}", help="Evolução"):
+            if b_cols[3].button("🦷 Evol", key=f"v_{p_id}_{idx}"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "evolucao_tratamento")
                 st.switch_page("pages/evolucao_tratamento.py")
                 
-            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar"):
+            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}"):
                 try:
                     sheet_f = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
                     sheet_f.append_row([p_id, hoje.strftime("%d/%m/%Y"), "AGENDADO"])
