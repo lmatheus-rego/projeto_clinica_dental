@@ -14,7 +14,7 @@ import pytz
 from pathlib import Path
 
 # --------------------------------------------
-# 🔹 Configuração e Estilo
+# 🔹 Configuração e Estilo UI/UX
 # --------------------------------------------
 st.set_page_config(page_title="Prontuário - Céu da Boca", page_icon="🦷", layout="wide")
 fuso_manaus = pytz.timezone("America/Manaus")
@@ -53,7 +53,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --------------------------------------------
-# 🔹 Funções de Dados e Credenciais
+# 🔹 Funções de Dados
 # --------------------------------------------
 def get_credentials(scopes):
     service_account_info = dict(st.secrets["gcp_service_account"])
@@ -67,7 +67,10 @@ def carregar_tudo():
         creds = get_credentials(scopes)
         gc = gspread.authorize(creds)
         sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
-        return pd.DataFrame(sh.sheet1.get_all_records()), pd.DataFrame(sh.worksheet("Fila").get_all_records()), pd.DataFrame(sh.worksheet("Registros").get_all_records()), gc
+        return (pd.DataFrame(sh.sheet1.get_all_records()), 
+                pd.DataFrame(sh.worksheet("Fila").get_all_records()), 
+                pd.DataFrame(sh.worksheet("Registros").get_all_records()), 
+                gc)
     except:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), None
 
@@ -83,7 +86,31 @@ def listar_arquivos(paciente_id):
     except: return []
 
 # --------------------------------------------
-# 🔹 Relatório PDF Profissional
+# 🔹 Mapeamento de Campos (Tratamento de Nomes)
+# --------------------------------------------
+MAPA_CAMPOS = {
+    "NOME": "Nome Completo",
+    "IDADE": "Idade",
+    "DATA": "Data de Nascimento",
+    "SEXO": "Gênero/Sexo",
+    "FILIACAO": "Filiação",
+    "ENDERECO": "Endereço Residencial",
+    "TELEFONE": "Telefone de Contato",
+    "FAO": "Prontuário FAO",
+    "STATUS": "Status do Paciente",
+    "TIPO_FISSURA": "Tipo de Fissura",
+    "HISTORIA_TRATAMENTO": "História do Tratamento",
+    "CARAC_OCLUSAIS": "Características Oclusais",
+    "NECES_ODONTO": "Necessidades Odontológicas",
+    "NECES_ORTO": "Necessidades Ortodônticas",
+    "NECES_CIRUR": "Necessidades Cirúrgicas",
+    "OUTROS": "Outras Informações/Observações",
+    "DIAGNOSTICO": "Diagnóstico Clínico",
+    "PLANO_TRATAMENTO": "Plano de Tratamento Proposto"
+}
+
+# --------------------------------------------
+# 🔹 Geração do Relatório PDF
 # --------------------------------------------
 def gerar_pdf_completo(paciente, evolucoes):
     buffer = io.BytesIO()
@@ -91,55 +118,39 @@ def gerar_pdf_completo(paciente, evolucoes):
     styles = getSampleStyleSheet()
     story = []
 
-    # Título Institucional
     story.append(Paragraph("<b>PROJETO CÉU DA BOCA - FAO/UFAM</b>", styles['Title']))
-    story.append(Paragraph(f"PRONTUÁRIO CLÍNICO DIGITAL - {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    story.append(Paragraph(f"FICHA CLÍNICA COMPLETA - {datetime.datetime.now(fuso_manaus).strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
     story.append(Spacer(1, 15))
 
-    def format_table_data(title, data_dict):
-        story.append(Paragraph(f"<b>{title}</b>", styles['Heading2']))
-        table_data = []
-        for k, v in data_dict.items():
-            val = str(v) if v and str(v).strip() != "" else "Não informado"
-            table_data.append([Paragraph(f"<b>{k}:</b>", styles['Normal']), Paragraph(val, styles['Normal'])])
+    def add_section(titulo, campos_chaves):
+        story.append(Paragraph(f"<b>{titulo}</b>", styles['Heading2']))
+        data = []
+        for chave in campos_chaves:
+            label = MAPA_CAMPOS.get(chave, chave)
+            valor = str(paciente.get(chave, "Não informado")).strip()
+            if valor == "" or valor == "nan": valor = "Não informado"
+            data.append([Paragraph(f"<b>{label}:</b>", styles['Normal']), Paragraph(valor, styles['Normal'])])
         
-        t = Table(table_data, colWidths=[4*cm, 13*cm])
+        t = Table(data, colWidths=[5*cm, 12*cm])
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (0,-1), colors.whitesmoke),
             ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('PADDING', (0,0), (-1,-1), 6),
+            ('PADDING', (0,0), (-1,-1), 5),
         ]))
         story.append(t)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 12))
 
-    # Dados Pessoais
-    dados_pessoais = {
-        "Nome": paciente.get('Nome'), "Idade": paciente.get('Idade'), "Sexo": paciente.get('Sexo'),
-        "FAO": paciente.get('Fao'), "Telefone": paciente.get('Telefone'), "Data de Nascimento": paciente.get('Data'),
-        "Endereço": paciente.get('Endereco'), "Filiação": paciente.get('Filiacao')
-    }
-    format_table_data("DADOS PESSOAIS", dados_pessoais)
+    add_section("1. DADOS IDENTIFICADORES", ["NOME", "IDADE", "DATA", "SEXO", "FILIACAO", "ENDERECO", "TELEFONE", "FAO", "STATUS"])
+    add_section("2. AVALIAÇÃO CLÍNICA", ["TIPO_FISSURA", "HISTORIA_TRATAMENTO", "CARAC_OCLUSAIS", "DIAGNOSTICO"])
+    add_section("3. NECESSIDADES E PLANEJAMENTO", ["NECES_ODONTO", "NECES_ORTO", "NECES_CIRUR", "PLANO_TRATAMENTO", "OUTROS"])
 
-    # Dados Clínicos
-    dados_clinicos = {
-        "Tipo de Fissura": paciente.get('Tipo De Fissura') or paciente.get('Tipo_Fissura'),
-        "História do Tratamento": paciente.get('Historia_Tratamento'),
-        "Características Oclusais": paciente.get('Carac_Oclusais'),
-        "Diagnóstico": paciente.get('Diagnostico'),
-        "Plano de Tratamento": paciente.get('Plano_Tratamento'),
-        "Outros": paciente.get('Outros')
-    }
-    format_table_data("AVALIAÇÃO CLÍNICA", dados_clinicos)
-
-    # Evoluções
-    story.append(Paragraph("<b>HISTÓRICO DE EVOLUÇÕES</b>", styles['Heading2']))
+    story.append(Paragraph("<b>4. HISTÓRICO DE EVOLUÇÕES</b>", styles['Heading2']))
     if not evolucoes.empty:
         for _, row in evolucoes.sort_values("DATA_REGISTRO", ascending=False).iterrows():
             d = row["DATA_REGISTRO"].strftime("%d/%m/%Y") if hasattr(row["DATA_REGISTRO"], "strftime") else str(row["DATA_REGISTRO"])
-            story.append(Paragraph(f"<b>{d} - {row.get('USUARIO','-')}:</b>", styles['Normal']))
-            story.append(Paragraph(str(row.get('EVOLUCAO','')), styles['Normal']))
-            story.append(Spacer(1, 6))
+            story.append(Paragraph(f"<b>{d} - {row.get('USUARIO','-')}:</b> {row.get('EVOLUCAO','')}", styles['Normal']))
+            story.append(Spacer(1, 4))
     else:
         story.append(Paragraph("Nenhuma evolução registrada.", styles['Normal']))
 
@@ -151,7 +162,7 @@ def gerar_pdf_completo(paciente, evolucoes):
 # 🔹 Interface do Usuário
 # --------------------------------------------
 df_p, df_f, df_r, gc = carregar_tudo()
-if not df_p.empty: df_p.columns = df_p.columns.str.strip().str.title()
+if not df_p.empty: df_p.columns = df_p.columns.str.strip().str.upper()
 
 with st.sidebar:
     st.markdown("### 🏛️ FAO/UFAM\n**Céu da Boca**")
@@ -161,7 +172,7 @@ with st.sidebar:
         df_f["DATA"] = pd.to_datetime(df_f["DATA"], dayfirst=True, errors="coerce").dt.date
         fila_h = df_f[df_f["DATA"] == datetime.date.today()]
         for _, r in fila_h.iterrows():
-            n = df_p[df_p["Id"].astype(str).str.strip() == str(r["PACIENTE_ID"]).strip()]["Nome"].values
+            n = df_p[df_p["ID"].astype(str).str.strip() == str(r["PACIENTE_ID"]).strip()]["NOME"].values
             st.info(f"👤 {n[0] if len(n)>0 else r['PACIENTE_ID']}")
 
 st.markdown('<div class="main-header"><h1>🗂️ Prontuário Clínico Digital</h1></div>', unsafe_allow_html=True)
@@ -170,20 +181,20 @@ id_p = st.query_params.get("idpaciente", "")
 if isinstance(id_p, list): id_p = id_p[0]
 id_p = str(id_p).strip()
 
-paciente_df = df_p[df_p["Id"].astype(str) == id_p]
+paciente_df = df_p[df_p["ID"].astype(str) == id_p]
 if paciente_df.empty:
-    st.warning("Aguardando seleção de paciente.")
+    st.warning("⚠️ Selecione um paciente na lista para visualizar os detalhes.")
     if st.button("⬅️ Voltar para Lista"): st.switch_page("pages/2_🧑🏻_lista_paciente.py")
     st.stop()
 
 paciente = paciente_df.iloc[0]
 evolucoes = df_r[df_r["PACIENTE_ID"].astype(str) == id_p] if not df_r.empty else pd.DataFrame()
 
-# Cabeçalho do Paciente (Nome próximo aos dados)
+# Cabeçalho Destaque
 st.markdown(f"""
     <div class="patient-header-area">
-        <div class="patient-name-label">Paciente Selecionado</div>
-        <div class="patient-name-value">{str(paciente.get('Nome','')).upper()}</div>
+        <div class="patient-name-label">Prontuário do Paciente</div>
+        <div class="patient-name-value">{str(paciente.get('NOME','')).upper()}</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -195,43 +206,46 @@ with c1:
         st.switch_page("pages/2_🧑🏻_lista_paciente.py")
 with c2:
     pdf_buffer = gerar_pdf_completo(paciente, evolucoes)
-    st.download_button("🖨️ Imprimir Ficha Completa", data=pdf_buffer, file_name=f"Ficha_{paciente.get('Nome','paciente')}.pdf", mime="application/pdf", use_container_width=True)
+    st.download_button("🖨️ Exportar Ficha Clínica", data=pdf_buffer, file_name=f"Ficha_{paciente.get('NOME','paciente')}.pdf", mime="application/pdf", use_container_width=True)
 
 st.markdown("---")
 
 # --------------------------------------------
-# 🔹 Corpo da Ficha (Vertical com Expanders)
+# 🔹 Renderização dos Campos na Tela
 # --------------------------------------------
+def render_campo(chave):
+    label = MAPA_CAMPOS.get(chave, chave)
+    valor = str(paciente.get(chave, "Não informado")).strip()
+    if valor == "" or valor == "nan": valor = "Não informado"
+    st.markdown(f'<div class="record-label">{label}</div><div class="record-value">{valor}</div>', unsafe_allow_html=True)
 
-def render_field(label, value):
-    val = str(value) if value and str(value).strip() != "" else "Não informado"
-    st.markdown(f'<div class="record-label">{label}</div><div class="record-value">{val}</div>', unsafe_allow_html=True)
+# 1. Dados Pessoais
+with st.expander("👤 1. Dados Pessoais e Identificação", expanded=True):
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        for k in ["NOME", "IDADE", "DATA", "SEXO", "FAO"]: render_campo(k)
+    with col_p2:
+        for k in ["FILIACAO", "TELEFONE", "ENDERECO", "STATUS"]: render_campo(k)
 
-with st.expander("🧾 Dados Cadastrais", expanded=True):
-    col_a, col_b = st.columns(2)
-    with col_a:
-        render_field("Nome Completo", paciente.get("Nome"))
-        render_field("Idade", paciente.get("Idade"))
-        render_field("Sexo", paciente.get("Sexo"))
-        render_field("Prontuário FAO", paciente.get("Fao"))
-    with col_b:
-        render_field("Telefone de Contato", paciente.get("Telefone"))
-        render_field("Data de Nascimento", paciente.get("Data"))
-        render_field("Endereço", paciente.get("Endereco"))
-        render_field("Filiação", paciente.get("Filiacao"))
+# 2. Avaliação Clínica
+with st.expander("🩺 2. Avaliação Clínica e Diagnóstico", expanded=True):
+    render_campo("TIPO_FISSURA")
+    col_c1, col_c2 = st.columns(2)
+    with col_c1:
+        for k in ["HISTORIA_TRATAMENTO", "CARAC_OCLUSAIS"]: render_campo(k)
+    with col_c2:
+        for k in ["DIAGNOSTICO", "PLANO_TRATAMENTO"]: render_campo(k)
 
-with st.expander("🩺 Avaliação Clínica", expanded=True):
-    render_field("Tipo de Fissura", paciente.get('Tipo De Fissura') or paciente.get('Tipo_Fissura'))
-    c_clin1, c_clin2 = st.columns(2)
-    with c_clin1:
-        render_field("História do Tratamento", paciente.get("Historia_Tratamento"))
-        render_field("Características Oclusais", paciente.get("Carac_Oclusais"))
-        render_field("Outros Detalhes", paciente.get("Outros"))
-    with c_clin2:
-        render_field("Diagnóstico Clínico", paciente.get("Diagnostico"))
-        render_field("Plano de Tratamento Proposto", paciente.get("Plano_Tratamento"))
+# 3. Necessidades Específicas
+with st.expander("🦷 3. Planejamento e Necessidades Específicas", expanded=True):
+    col_n1, col_n2 = st.columns(2)
+    with col_n1:
+        for k in ["NECES_ODONTO", "NECES_ORTO"]: render_campo(k)
+    with col_n2:
+        for k in ["NECES_CIRUR", "OUTROS"]: render_campo(k)
 
-with st.expander("📜 Histórico de Evoluções", expanded=True):
+# 4. Evoluções
+with st.expander("📜 4. Histórico de Evoluções", expanded=True):
     if not evolucoes.empty:
         evolucoes["DATA_REGISTRO"] = pd.to_datetime(evolucoes["DATA_REGISTRO"], dayfirst=True, errors='coerce')
         for _, row in evolucoes.sort_values("DATA_REGISTRO", ascending=False).iterrows():
@@ -245,7 +259,8 @@ with st.expander("📜 Histórico de Evoluções", expanded=True):
     else:
         st.info("Nenhuma evolução registrada.")
 
-with st.expander("📎 Documentos Associados", expanded=False):
+# 5. Documentos
+with st.expander("📎 5. Documentos Associados (Drive)", expanded=False):
     arquivos = listar_arquivos(id_p)
     if arquivos:
         for f in arquivos:
@@ -253,4 +268,4 @@ with st.expander("📎 Documentos Associados", expanded=False):
             col_f1.markdown(f"📄 **{f['name']}**")
             col_f2.link_button("Abrir", f["webContentLink"], use_container_width=True)
     else:
-        st.caption("Nenhum arquivo encontrado no Sistema.")
+        st.caption("Nenhum arquivo encontrado.")
