@@ -29,12 +29,17 @@ st.markdown("""
             background: linear-gradient(90deg, #004a99 0%, #007bff 100%);
             padding: 1.2rem 2rem;
             border-radius: 12px;
-            color: white;
+            color: white !important; /* Força o branco */
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; }
-        .main-header p { margin: 0; opacity: 0.8; font-size: 0.85rem; }
+        .main-header h1 { 
+            margin: 0; 
+            font-weight: 700; 
+            font-size: 1.6rem; 
+            color: white !important; 
+        }
+        .main-header p { margin: 0; opacity: 0.8; font-size: 0.85rem; color: white !important; }
 
         /* Estilização da Tabela */
         .table-header {
@@ -48,7 +53,6 @@ st.markdown("""
             display: flex;
         }
 
-        /* Ajuste de Fontes de Dados (Fissura e Status) */
         .data-text {
             font-size: 13.5px !important;
             font-weight: 500;
@@ -62,7 +66,7 @@ st.markdown("""
 
         /* Botões de Ação Otimizados */
         div[data-testid="column"] button {
-            font-size: 12px !important; /* Fonte maior para legibilidade */
+            font-size: 11px !important;
             padding: 0px 2px !important;
             height: 30px !important;
             border-radius: 6px !important;
@@ -76,7 +80,6 @@ st.markdown("""
             color: white !important;
         }
 
-        /* Badges */
         .badge {
             padding: 2px 8px;
             border-radius: 10px;
@@ -85,6 +88,7 @@ st.markdown("""
         }
         .badge-m { background-color: #e0f2fe; color: #0369a1; }
         .badge-f { background-color: #fdf2f8; color: #be185d; }
+        .badge-evol { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -121,21 +125,37 @@ def carregar_dados():
         credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
         gc = gspread.authorize(credentials)
         sh = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs")
-        return pd.DataFrame(sh.worksheet("Pacientes").get_all_records()), pd.DataFrame(sh.worksheet("Fila").get_all_records()), gc
-    except:
+        
+        # Carregar Pacientes
+        df_p = pd.DataFrame(sh.worksheet("Pacientes").get_all_records())
+        df_p.columns = df_p.columns.str.strip().str.upper()
+        
+        # Carregar Fila
+        df_f = pd.DataFrame(sh.worksheet("Fila").get_all_records())
+        
+        # Carregar Evoluções para contagem
+        df_r = pd.DataFrame(sh.worksheet("Registros").get_all_records())
+        df_r.columns = df_r.columns.str.strip().str.upper()
+        
+        # Processar contagem de evoluções
+        if not df_r.empty and 'PACIENTE_ID' in df_r.columns:
+            evol_counts = df_r['PACIENTE_ID'].astype(str).value_counts().reset_index()
+            evol_counts.columns = ['ID_EVOL', 'QTD_EVOL']
+            df_p = df_p.merge(evol_counts, left_on='ID', right_on='ID_EVOL', how='left').fillna({'QTD_EVOL': 0})
+        else:
+            df_p['QTD_EVOL'] = 0
+            
+        return df_p, df_f, gc
+    except Exception as e:
+        st.error(f"Erro ao carregar dados: {e}")
         return pd.DataFrame(), pd.DataFrame(), None
 
-# Nome do arquivo principal para controle de páginas
 MAIN_SCRIPT = "1_🏠_home.py" 
 
-# Esconder páginas do menu lateral ao carregar
 for p in ["ficha_clinica", "alterar_paciente", "inserir_exames_e_diagnosticos", "evolucao_tratamento"]:
     delete_page(MAIN_SCRIPT, p)
 
 df_pacientes, df_fila, gc = carregar_dados()
-
-if not df_pacientes.empty:
-    df_pacientes.columns = df_pacientes.columns.str.strip().str.upper()
 
 # ==========================
 # Sidebar e Pesquisa
@@ -146,6 +166,7 @@ with st.sidebar:
     st.markdown("### 📅 Fila do Dia")
     hoje = datetime.date.today()
     if not df_fila.empty:
+        df_fila.columns = df_fila.columns.str.strip().str.upper()
         df_fila["DATA"] = pd.to_datetime(df_fila["DATA"], dayfirst=True, errors="coerce").dt.date
         fila_hoje = df_fila[df_fila["DATA"] == hoje]
         for _, r in fila_hoje.iterrows():
@@ -159,7 +180,8 @@ with st.sidebar:
 
 st.markdown("""
     <div class="main-header">
-        <h1>Céu da Boca — Gestão de Pacientes</h1>
+        <h1>🦷 Céu da Boca — Gestão de Pacientes</h1>
+        <p>Faculdade de Odontologia - UFAM</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -167,19 +189,21 @@ c_search, _ = st.columns([1.5, 2])
 busca = c_search.text_input("🔍 Buscar paciente:", placeholder="Nome, FAO ou status...")
 
 if busca:
-    df_pacientes = df_pacientes[df_pacientes.apply(lambda r: r.astype(str).str.lower().str.contains(busca.lower()).any(), axis=1)]
+    busca_lower = busca.lower()
+    df_pacientes = df_pacientes[df_pacientes.apply(lambda r: r.astype(str).str.lower().str.contains(busca_lower).any(), axis=1)]
 
 # ==========================
 # Lista de Pacientes (Tabela Otimizada)
 # ==========================
-# Reajustei as proporções: Ações agora ocupa 3.5 em vez de 4.5
+# Proporções ajustadas para incluir a coluna de Evoluções (QTD)
 st.markdown("""
     <div class="table-header">
-        <div style="flex: 2.2;">PACIENTE / FAO</div>
+        <div style="flex: 2.1;">PACIENTE / FAO</div>
         <div style="flex: 0.5;">IDADE</div>
-        <div style="flex: 0.4;">GEN</div>
-        <div style="flex: 1.8;">TIPO DE FISSURA</div>
-        <div style="flex: 1.2;">STATUS</div>
+        <div style="flex: 0.3;">GEN</div>
+        <div style="flex: 1.5;">TIPO DE FISSURA</div>
+        <div style="flex: 1.0;">STATUS</div>
+        <div style="flex: 0.6; text-align: center;">EVOL.</div>
         <div style="flex: 3.5; text-align: center;">AÇÕES</div>
     </div>
 """, unsafe_allow_html=True)
@@ -191,10 +215,11 @@ for idx, row in df_pacientes.iterrows():
     sexo = str(row.get("SEXO", "-")).upper()[:1]
     fissura = row.get("TIPO_FISSURA", "-")
     status = row.get("STATUS", "-")
+    qtd_evol = int(row.get("QTD_EVOL", 0))
     
     with st.container():
-        # Layout da Linha
-        c1, c2, c3, c4, c5, c_btns = st.columns([2.2, 0.5, 0.4, 1.8, 1.2, 3.5])
+        # Layout da Linha com 7 colunas
+        c1, c2, c3, c4, c5, c6, c_btns = st.columns([2.1, 0.5, 0.3, 1.5, 1.0, 0.6, 3.5])
         
         c1.markdown(f"**{nome}**<br><small style='color:#64748b'>FAO: {fao}</small>", unsafe_allow_html=True)
         c2.markdown(f"<div style='padding-top:10px'>{row.get('IDADE', '-')}a</div>", unsafe_allow_html=True)
@@ -202,14 +227,16 @@ for idx, row in df_pacientes.iterrows():
         g_style = "badge-m" if sexo == "M" else "badge-f"
         c3.markdown(f"<div style='padding-top:8px'><span class='badge {g_style}'>{sexo}</span></div>", unsafe_allow_html=True)
         
-        # Colunas com fonte aumentada conforme solicitado
         c4.markdown(f"<div class='data-text' style='padding-top:8px'>{fissura}</div>", unsafe_allow_html=True)
         
         st_color = "#10b981" if "ATIVO" in str(status).upper() else "#94a3b8"
         c5.markdown(f"<div class='status-text' style='padding-top:8px; color:{st_color}'>{status}</div>", unsafe_allow_html=True)
 
+        # Coluna de Evoluções
+        c6.markdown(f"<div style='padding-top:8px; text-align:center;'><span class='badge badge-evol'>{qtd_evol}</span></div>", unsafe_allow_html=True)
+
         with c_btns:
-            st.write("") # Alinhador vertical
+            st.write("") 
             b_cols = st.columns(5)
             
             if b_cols[0].button("📄 Ficha", key=f"f_{p_id}_{idx}", help="Ver Ficha"):
@@ -222,7 +249,7 @@ for idx, row in df_pacientes.iterrows():
                 add_page(MAIN_SCRIPT, "alterar_paciente")
                 st.switch_page("pages/alterar_paciente.py")
 
-            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Anexar Exames e Editar Dados Clínicos"):
+            if b_cols[2].button("🧾 Exam", key=f"x_{p_id}_{idx}", help="Anexar Exames"):
                 st.query_params["idpaciente"] = p_id
                 add_page(MAIN_SCRIPT, "inserir_exames_e_diagnosticos")
                 st.switch_page("pages/inserir_exames_e_diagnosticos.py")
@@ -232,7 +259,7 @@ for idx, row in df_pacientes.iterrows():
                 add_page(MAIN_SCRIPT, "evolucao_tratamento")
                 st.switch_page("pages/evolucao_tratamento.py")
                 
-            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar Consulta para Hoje"):
+            if b_cols[4].button("📅 Agnd", key=f"a_{p_id}_{idx}", help="Agendar Hoje"):
                 try:
                     sheet_f = gc.open_by_key("1H3sOlQ1cDTj8z4uMSrM0oP-45TF0hR5gYwXjCJN97cs").worksheet("Fila")
                     sheet_f.append_row([p_id, hoje.strftime("%d/%m/%Y"), "AGENDADO"])
