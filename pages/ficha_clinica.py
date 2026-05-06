@@ -11,6 +11,7 @@ from reportlab.lib.units import cm
 import io
 import datetime
 import pytz
+import time
 from pathlib import Path
 from streamlit.source_util import (
     page_icon_and_name,
@@ -38,7 +39,7 @@ st.markdown("""
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; color: white; }
+        .main-header h1 { margin: 0; font-weight: 700; font-size: 1.6rem; color: white !important; border: none; }
 
         .patient-header-area {
             background-color: #f8fafc;
@@ -59,10 +60,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --------------------------------------------
-# 🔹 Funções de Dados
+# 🔹 Funções de Dados e Sistema
 # --------------------------------------------
-
-# ----------------- Funções Originais -----------------
 
 def delete_page(main_script_path_str, page_name):
     current_pages = get_pages(main_script_path_str)
@@ -97,13 +96,14 @@ def listar_arquivos(paciente_id):
         service = build('drive', 'v3', credentials=creds)
         PASTA_ID = "1LFJq0950S2vf9TNyjLKHl6TO4E4YYPdn"
         query = f"'{PASTA_ID}' in parents and trashed=false"
-        res = service.files().list(q=query, fields='files(id, name, webContentLink)').execute()
+        # Solicitamos o webViewLink para poder incorporar no iframe
+        res = service.files().list(q=query, fields='files(id, name, webViewLink, webContentLink)').execute()
         prefixo = f'P{paciente_id}#'
         return [f for f in res.get('files', []) if f['name'].startswith(prefixo)]
     except: return []
 
 # --------------------------------------------
-# 🔹 Mapeamento de Campos (Tratamento de Nomes)
+# 🔹 Mapeamento e Persistência de ID
 # --------------------------------------------
 MAPA_CAMPOS = {
     "NOME": "Nome Completo",
@@ -125,6 +125,21 @@ MAPA_CAMPOS = {
     "DIAGNOSTICO": "Diagnóstico Clínico",
     "PLANO_TRATAMENTO": "Plano de Tratamento Proposto"
 }
+
+# Captura de ID com persistência
+id_url = st.query_params.get("idpaciente", "")
+if isinstance(id_url, list): id_url = id_url[0]
+
+if id_url:
+    st.session_state.id_persistente = str(id_url).strip()
+
+if "id_persistente" in st.session_state:
+    id_p = st.session_state.id_persistente
+else:
+    st.error("⚠️ Paciente não identificado. Retorne à lista.")
+    if st.button("⬅️ Ir para Lista"):
+        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+    st.stop()
 
 # --------------------------------------------
 # 🔹 Geração do Relatório PDF
@@ -194,29 +209,26 @@ with st.sidebar:
 
 st.markdown('<div class="main-header"><h1>🗂️ Prontuário Clínico Digital</h1></div>', unsafe_allow_html=True)
 
-id_p = st.query_params.get("idpaciente", "")
-if isinstance(id_p, list): id_p = id_p[0]
-id_p = str(id_p).strip()
-
 paciente_df = df_p[df_p["ID"].astype(str) == id_p]
-#if paciente_df.empty:
-#    st.warning("⚠️ Selecione um paciente na lista para visualizar os detalhes.")
-#    if st.button("⬅️ Voltar para Lista"): st.switch_page("pages/2_🧑🏻_lista_paciente.py")
-#    st.stop()
+if paciente_df.empty:
+    st.error("❌ Paciente não encontrado.")
+    st.stop()
 
 paciente = paciente_df.iloc[0]
 evolucoes = df_r[df_r["PACIENTE_ID"].astype(str) == id_p] if not df_r.empty else pd.DataFrame()
 
-
-
-# Ações
+# ----------------- Ações (Navegação Corrigida) -----------------
 c1, c2, _ = st.columns([1, 1, 2.5])
 with c1:
     if st.button("🔙 Voltar para lista de pacientes"):
         st.query_params.clear()
         if "id_persistente" in st.session_state: del st.session_state.id_persistente
         delete_page("1_🏠_home", "ficha_clinica")
-        st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+        try:
+            st.switch_page("pages/2_🧑🏻_lista_paciente.py")
+        except:
+            st.switch_page("pages/2_lista_paciente.py")
+
 with c2:
     pdf_buffer = gerar_pdf_completo(paciente, evolucoes)
     st.download_button("🖨️ Exportar Ficha Clínica", data=pdf_buffer, file_name=f"Ficha_{paciente.get('NOME','paciente')}.pdf", mime="application/pdf", use_container_width=True)
@@ -228,6 +240,7 @@ st.markdown(f"""
         <div class="patient-name-value">{str(paciente.get('NOME','')).upper()}</div>
     </div>
 """, unsafe_allow_html=True)
+
 # --------------------------------------------
 # 🔹 Renderização dos Campos na Tela
 # --------------------------------------------
@@ -277,13 +290,21 @@ with st.expander("📜 4. Histórico de Evoluções", expanded=True):
     else:
         st.info("Nenhuma evolução registrada.")
 
-# 5. Documentos
+# 5. Documentos (Visualização Interna Corrigida)
 with st.expander("📎 5. Documentos Associados (Drive)", expanded=False):
     arquivos = listar_arquivos(id_p)
     if arquivos:
         for f in arquivos:
-            col_f1, col_f2 = st.columns([4, 1])
-            col_f1.markdown(f"📄 **{f['name']}**")
-            col_f2.link_button("Abrir", f["webContentLink"], use_container_width=True)
+            with st.container():
+                col_f1, col_f2 = st.columns([4, 1])
+                col_f1.markdown(f"📄 **{f['name']}**")
+                
+                # Botão para expandir a visualização do arquivo específico
+                if col_f2.button("Visualizar", key=f["id"]):
+                    # O link de visualização do drive precisa terminar em /preview para funcionar em iframe
+                    embed_link = f["webViewLink"].replace("/view?usp=drivesdk", "/preview").replace("/view", "/preview")
+                    st.markdown(f'<iframe src="{embed_link}" width="100%" height="600px"></iframe>', unsafe_allow_html=True)
+                
+                st.markdown("---")
     else:
         st.caption("Nenhum arquivo encontrado.")
