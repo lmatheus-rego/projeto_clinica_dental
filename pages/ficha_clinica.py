@@ -222,7 +222,7 @@ def render_campo(chave):
 with st.expander("👤 1. Dados Pessoais e Identificação", expanded=True):
     col_p1, col_p2 = st.columns(2)
     with col_p1:
-        for k in ["NOME", "IDADE", "DATA", "SEXO", "FAO"]: render_campo(k)
+        for k in ["FAO", "IDADE", "DATA", "SEXO"]: render_campo(k)
     with col_p2:
         for k in ["FILIACAO", "TELEFONE", "ENDERECO", "STATUS"]: render_campo(k)
 
